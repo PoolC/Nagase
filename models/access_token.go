@@ -24,18 +24,18 @@ var CreateAccessTokenMutation = &graphql.Field{
 	Type:        accessTokenType,
 	Description: "Access Token을 발급합니다.",
 	Args: graphql.FieldConfigArgument{
-		"user_id":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+		"loginID":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 		"password": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-		userID, _ := params.Args["user_id"].(string)
+		loginID, _ := params.Args["loginID"].(string)
 		password, _ := params.Args["password"].(string)
 
-		// Get the member by user id and password.
+		// Get the member by login id and password.
 		member := new(Member)
-		database.DB.Where(&Member{UserID: userID}).First(&member)
+		database.DB.Where(&Member{LoginID: loginID}).First(&member)
 		if member.UUID == "" || !member.ValidatePassword(password) || !member.IsActivated {
-			return nil, fmt.Errorf("invalid user id or password")
+			return nil, fmt.Errorf("invalid login id or password")
 		}
 
 		// If token not exists or expired, generate new token.

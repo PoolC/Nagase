@@ -14,21 +14,52 @@ import (
 )
 
 type Member struct {
-	UUID string `gorm:"type:varchar(40);PRIMARY_KEY" json:"uuid"`
+	UUID string `gorm:"type:varchar(40);PRIMARY_KEY"`
 
-	UserID       string `gorm:"type:varchar(40);UNIQUE_INDEX" json:"user_id"`
+	LoginID      string `gorm:"type:varchar(40);UNIQUE_INDEX`
 	PasswordHash []byte `gorm:"NOT NULL"`
 	PasswordSalt []byte `gorm:"NOT NULL"`
-	Email        string `gorm:"type:varchar(255);UNIQUE_INDEX" json:"email"`
-	Name         string `gorm:"type:varchar(40)" json:"name"`
-	Department   string `gorm:"type:varchar(40)" json:"department"`
-	StudentID    string `gorm:"type:varchar(40);UNIQUE_INDEX" json:"student_id"`
+	Email        string `gorm:"type:varchar(255);UNIQUE_INDEX"`
+	Name         string `gorm:"type:varchar(40)"`
+	Department   string `gorm:"type:varchar(40)"`
+	StudentID    string `gorm:"type:varchar(40);UNIQUE_INDEX"`
 
-	IsActivated bool `gorm:"default:false" json:"is_activated"`
-	IsAdmin     bool `gorm:"default:false" json:"is_admin"`
+	IsActivated bool `gorm:"default:false"`
+	IsAdmin     bool `gorm:"default:false"`
 
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+type MemberType struct {
+	UUID string
+
+	LoginID    string
+	Email      string
+	Name       string
+	Department string
+	StudentID  string
+
+	IsActivated bool
+	IsAdmin     bool
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (member Member) toGraphQLType() MemberType {
+	return MemberType {
+		UUID:        member.UUID,
+		LoginID:     member.LoginID,
+		Email:       member.Email,
+		Name:        member.Name,
+		Department:  member.Department,
+		StudentID:   member.StudentID,
+		IsActivated: member.IsActivated,
+		IsAdmin:     member.IsAdmin,
+		CreatedAt:   member.CreatedAt,
+		UpdatedAt:   member.UpdatedAt,
+	}
 }
 
 func (member Member) ValidatePassword(password string) bool {
@@ -39,14 +70,14 @@ func (member Member) ValidatePassword(password string) bool {
 var memberType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Member",
 	Fields: graphql.Fields{
-		"uuid":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"user_id":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"email":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"name":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"department":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"student_id":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"is_activated": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-		"is_admin":     &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"uuid":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"loginID":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"email":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"name":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"department":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"studentID":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"isActivated": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"isAdmin":     &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 	},
 })
 
@@ -55,7 +86,7 @@ var MeQuery = &graphql.Field{
 	Type:        memberType,
 	Description: "자신의 회원 정보를 조회합니다.",
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-		return params.Context.Value("member"), nil
+		return params.Context.Value("member").(*Member).toGraphQLType(), nil
 	},
 }
 
@@ -64,20 +95,20 @@ var CreateMemberMutation = &graphql.Field{
 	Type:        memberType,
 	Description: "회원을 추가합니다.",
 	Args: graphql.FieldConfigArgument{
-		"user_id":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+		"loginID":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 		"password":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 		"email":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 		"name":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 		"department": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-		"student_id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+		"studentID":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-		userID, _ := params.Args["user_id"].(string)
+		loginID, _ := params.Args["loginID"].(string)
 		password, _ := params.Args["password"].(string)
 		email, _ := params.Args["email"].(string)
 		name, _ := params.Args["name"].(string)
 		department, _ := params.Args["department"].(string)
-		studentID, _ := params.Args["student_id"].(string)
+		studentID, _ := params.Args["studentID"].(string)
 
 		// Create member model.
 		salt := make([]byte, 32)
@@ -86,7 +117,7 @@ var CreateMemberMutation = &graphql.Field{
 		hash := argon2.IDKey([]byte(password), salt, 1, 8*1024, 4, 32)
 		member := Member{
 			UUID:         uuid.NewV4().String(),
-			UserID:       userID,
+			LoginID:      loginID,
 			PasswordHash: hash,
 			PasswordSalt: salt,
 			Email:        email,
@@ -103,14 +134,14 @@ var CreateMemberMutation = &graphql.Field{
 			return nil, fmt.Errorf("failed to create member")
 		}
 
-		return member, nil
+		return member.toGraphQLType(), nil
 	},
 }
 
 func GetMemberByUUID(uuid string) (*Member, error) {
 	member := new(Member)
 	database.DB.Where(&Member{UUID: uuid}).First(&member)
-	if member.UserID == "" {
+	if member.LoginID == "" {
 		return nil, fmt.Errorf("invalid member uuid")
 	}
 	return member, nil

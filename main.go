@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"net/http"
+	"os"
 	"strings"
 
+	"github.com/gorilla/handlers"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
 
@@ -15,24 +17,32 @@ import (
 func main() {
 	schema, _ := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
-			Name:   "RootQuery",
+			Name: "RootQuery",
 			Fields: graphql.Fields{
-				"me": models.MeQuery,
+				"me":     models.MeQuery,
+				"boards": models.BoardsQuery,
+				"post":   models.PostQuery,
 			},
 		}),
 		Mutation: graphql.NewObject(graphql.ObjectConfig{
 			Name: "RootMutation",
 			Fields: graphql.Fields{
 				"createAccessToken": models.CreateAccessTokenMutation,
-				"createMember": models.CreateMemberMutation,
+				"createMember":      models.CreateMemberMutation,
+				"createPost":        models.CreatePostMutation,
+				"createComment":     models.CreateCommentMutation,
 			},
 		}),
 	})
 
 	// Set GraphQL endpoint.
-	h := handler.New(&handler.Config{Schema: &schema})
+	h := handler.New(&handler.Config{
+		Schema: &schema,
+		Playground: true,
+	})
 
-	http.Handle("/graphql", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := http.NewServeMux()
+	server.Handle("/graphql", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// CORS configurations.
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
@@ -45,20 +55,20 @@ func main() {
 			memberUUID, _, err := auth.ValidatedToken(strings.Split(authorization, " ")[1])
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
-				return 
+				return
 			}
 
 			member, err := models.GetMemberByUUID(memberUUID)
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
-				return 
+				return
 			}
 
 			ctx = context.WithValue(ctx, "member", member)
 		}
 
 		h.ContextHandler(ctx, w, r)
-	}))
+	})))
 
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8080", handlers.CompressHandler(server))
 }

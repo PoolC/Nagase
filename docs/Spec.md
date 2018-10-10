@@ -77,12 +77,10 @@ type AccessToken {
 
 ```graphql
 type Board {
-  id:                 Int!
-  name:               String!           # URL이 되는 이름
-  readableName:       String!           # UI상으로 노출되는 이름
-  readPermission:     BoardPermission!
-  writePermission:    BoardPermission!
-  commentPermission:  BoardPermission!
+  name:              String!           # UI상으로 노출되는 이름
+  urlPath:           String!           # URL 상으로 표현되는 경로
+  readPermission:    BoardPermission!
+  writePermission:   BoardPermission!
 }
 
 enum BoardPermission {
