@@ -1,4 +1,4 @@
-# Nagase
+# Nagase ![Docker Build Status](https://img.shields.io/docker/build/poolc/nagase.svg)
 
 > PoolC 홈페이지 API 서버
 
