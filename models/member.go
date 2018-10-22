@@ -48,7 +48,7 @@ type MemberType struct {
 }
 
 func (member Member) toGraphQLType() MemberType {
-	return MemberType {
+	return MemberType{
 		UUID:        member.UUID,
 		LoginID:     member.LoginID,
 		Email:       member.Email,
@@ -95,35 +95,38 @@ var CreateMemberMutation = &graphql.Field{
 	Type:        memberType,
 	Description: "회원을 추가합니다.",
 	Args: graphql.FieldConfigArgument{
-		"loginID":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-		"password":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-		"email":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-		"name":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-		"department": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-		"studentID":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+		"Member": &graphql.ArgumentConfig{
+			Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
+				Name:        "Member",
+				Description: "회원가입 InputObject",
+				Fields: graphql.InputObjectConfigFieldMap{
+					"loginID":    &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+					"password":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+					"email":      &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+					"name":       &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+					"department": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+					"studentID":  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+				},
+			})),
+		},
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-		loginID, _ := params.Args["loginID"].(string)
-		password, _ := params.Args["password"].(string)
-		email, _ := params.Args["email"].(string)
-		name, _ := params.Args["name"].(string)
-		department, _ := params.Args["department"].(string)
-		studentID, _ := params.Args["studentID"].(string)
+		memberInput := params.Args["Member"].(map[string]interface{})
 
 		// Create member model.
 		salt := make([]byte, 32)
 		rand.Read(salt)
 
-		hash := argon2.IDKey([]byte(password), salt, 1, 8*1024, 4, 32)
+		hash := argon2.IDKey([]byte(memberInput["password"].(string)), salt, 1, 8*1024, 4, 32)
 		member := Member{
 			UUID:         uuid.NewV4().String(),
-			LoginID:      loginID,
+			LoginID:      memberInput["loginID"].(string),
 			PasswordHash: hash,
 			PasswordSalt: salt,
-			Email:        email,
-			Name:         name,
-			Department:   department,
-			StudentID:    studentID,
+			Email:        memberInput["email"].(string),
+			Name:         memberInput["name"].(string),
+			Department:   memberInput["department"].(string),
+			StudentID:    memberInput["studentID"].(string),
 			IsActivated:  false,
 			IsAdmin:      false,
 		}

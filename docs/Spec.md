@@ -77,10 +77,10 @@ type AccessToken {
 
 ```graphql
 type Board {
-  name:              String!           # UI상으로 노출되는 이름
-  urlPath:           String!           # URL 상으로 표현되는 경로
-  readPermission:    BoardPermission!
-  writePermission:   BoardPermission!
+  name:            String!           # UI상으로 노출되는 이름
+  urlPath:         String!           # URL 상으로 표현되는 경로
+  readPermission:  BoardPermission!
+  writePermission: BoardPermission!
 }
 
 enum BoardPermission {
@@ -96,10 +96,10 @@ enum BoardPermission {
 
 ```graphql
 type Comment {
-  id:           Int!
-  author:       Member!
-  body:         String!
-  created_at:   DateTime!
+  id:        Int!
+  author:    Member!
+  body:      String!
+  createdAt: DateTime!
 }
 ```
 
@@ -109,14 +109,14 @@ type Comment {
 
 ```graphql
 type Member {
-  uuid:         ID!
-  user_id:      String!
-  email:        String!
-  name:         String!
-  department:   String!
-  student_id:   String!
-  is_activated: Boolean!
-  is_admin:     Boolean!
+  uuid:        ID!
+  loginID:     String!
+  email:       String!
+  name:        String!
+  department:  String!
+  studentId:   String!
+  isActivated: Boolean!
+  isAdmin:     Boolean!
 }
 ```
 
@@ -126,20 +126,22 @@ type Member {
 
 ```graphql
 type Post {
-  id:           Int!
-  author:       User!
-  title:        String!
-  body:         String!
-  comments:     [Comment!]!
-  created_at:   DateTime!
-  updated_at:   DateTime!
+  id:        Int!
+  author:    User!
+  title:     String!
+  body:      String!
+  comments:  [Comment!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
 }
 ```
 
 
 ## Query
 
-  - me
+  - [me](#me)
+  - [boards](#boards)
+  - [post](#post)
 
 ### me
 
@@ -150,19 +152,29 @@ type Post {
 
 ## Mutation
 
-  - createAccessToken
-  - createMember
+  - [createAccessToken](#createaccesstoken)
+  - [createComment](#createcomment)
+  - [createMember](#createmember)
+  - [createPost](#createpost)
 
 ### createAccessToken
 
 Access Token을 발급합니다.
 
-요청:
+요청 :
 
-  - user_id (String!)
-  - password (String!)
+```graphql
+input Login {
+  loginID:  String!
+  password: String!
+}
+```
 
 응답 모델 : [AccessToken!](#accesstoken)
+
+### createComment
+
+댓글을 작성합니다.
 
 ### createMember
 
@@ -170,11 +182,19 @@ Access Token을 발급합니다.
 
 요청:
 
-  - user_id (String!)
-  - password (String!)
-  - email (String!)
-  - name (String!)
-  - department (String!)
-  - student_id (String!)
+```graphql
+input Member {
+  loginID:     String!
+  password:    String!
+  email:       String!
+  name:        String!
+  department:  String!
+  studentID:   String!
+}
+```
 
 응답 모델 : [Member!](#member)
+
+### createPost
+
+게시물을 작성합니다.

@@ -24,17 +24,24 @@ var CreateAccessTokenMutation = &graphql.Field{
 	Type:        accessTokenType,
 	Description: "Access Token을 발급합니다.",
 	Args: graphql.FieldConfigArgument{
-		"loginID":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-		"password": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+		"Login": &graphql.ArgumentConfig{
+			Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
+				Name:        "Login",
+				Description: "로그인 정보 InputObject",
+				Fields: graphql.InputObjectConfigFieldMap{
+					"loginID":  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+					"password": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+				},
+			})),
+		},
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-		loginID, _ := params.Args["loginID"].(string)
-		password, _ := params.Args["password"].(string)
+		loginInput := params.Args["Login"].(map[string]interface{})
 
 		// Get the member by login id and password.
 		member := new(Member)
-		database.DB.Where(&Member{LoginID: loginID}).First(&member)
-		if member.UUID == "" || !member.ValidatePassword(password) || !member.IsActivated {
+		database.DB.Where(&Member{LoginID: loginInput["loginID"].(string)}).First(&member)
+		if member.UUID == "" || !member.ValidatePassword(loginInput["password"].(string)) || !member.IsActivated {
 			return nil, fmt.Errorf("invalid login id or password")
 		}
 
@@ -43,7 +50,7 @@ var CreateAccessTokenMutation = &graphql.Field{
 		if err != nil {
 			return nil, fmt.Errorf("unknown error")
 		}
-		
+
 		return AccessToken{Key: key}, nil
 	},
 }

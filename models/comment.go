@@ -11,7 +11,7 @@ import (
 type Comment struct {
 	ID int
 
-	PostID     int    `gorm:"INDEX"`
+	PostID     int `gorm:"INDEX"`
 	AuthorUUID string
 	Body       string `gorm:"type:varchar(40)"`
 
@@ -39,10 +39,10 @@ func (comment Comment) toGraphQLType() CommentType {
 var commentType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Comment",
 	Fields: graphql.Fields{
-		"id":         &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-		"author":     &graphql.Field{Type: graphql.NewNonNull(memberType)},
-		"body":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"created_at": &graphql.Field{Type: graphql.NewNonNull(graphql.DateTime)},
+		"id":        &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"author":    &graphql.Field{Type: graphql.NewNonNull(memberType)},
+		"body":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"createdAt": &graphql.Field{Type: graphql.NewNonNull(graphql.DateTime)},
 	},
 })
 
