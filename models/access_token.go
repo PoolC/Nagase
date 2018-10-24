@@ -24,9 +24,9 @@ var CreateAccessTokenMutation = &graphql.Field{
 	Type:        accessTokenType,
 	Description: "Access Token을 발급합니다.",
 	Args: graphql.FieldConfigArgument{
-		"Login": &graphql.ArgumentConfig{
+		"LoginInput": &graphql.ArgumentConfig{
 			Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
-				Name:        "Login",
+				Name:        "LoginInput",
 				Description: "로그인 정보 InputObject",
 				Fields: graphql.InputObjectConfigFieldMap{
 					"loginID":  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
@@ -36,7 +36,7 @@ var CreateAccessTokenMutation = &graphql.Field{
 		},
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-		loginInput := params.Args["Login"].(map[string]interface{})
+		loginInput := params.Args["LoginInput"].(map[string]interface{})
 
 		// Get the member by login id and password.
 		member := new(Member)

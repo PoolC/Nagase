@@ -77,10 +77,12 @@ type AccessToken {
 
 ```graphql
 type Board {
+  id:              Int!
   name:            String!           # UI상으로 노출되는 이름
   urlPath:         String!           # URL 상으로 표현되는 경로
   readPermission:  BoardPermission!
   writePermission: BoardPermission!
+  posts:           [Post!]!
 }
 
 enum BoardPermission {
@@ -139,15 +141,40 @@ type Post {
 
 ## Query
 
-  - [me](#me)
-  - [boards](#boards)
-  - [post](#post)
+  - me
+  - boards
+  - post
+  - posts
 
 ### me
 
 자신의 회원 정보를 조회합니다.
 
 응답 모델 : [Member!](#member)
+
+### boards
+
+게시판 목록을 조회합니다.
+
+응답 모델 : [[Board!](#board)]!
+
+### post
+
+게시물을 조회합니다.
+
+  - `boardID` (Int!) : 게시판 ID
+
+응답 모델 : [Post!](#post)
+
+### posts
+
+게시물 목록을 조회합니다.
+
+파라미터 :
+
+  - `boardID` (Int!) : 게시판 ID
+
+응답 모델 : [[Post!][#post]]!
 
 
 ## Mutation

@@ -19,28 +19,16 @@ type Comment struct {
 	UpdatedAt time.Time
 }
 
-type CommentType struct {
-	ID        int
-	Author    MemberType
-	Body      string
-	CreatedAt time.Time
-}
-
-func (comment Comment) toGraphQLType() CommentType {
-	author, _ := GetMemberByUUID(comment.AuthorUUID)
-	return CommentType{
-		ID:        comment.ID,
-		Author:    author.toGraphQLType(),
-		Body:      comment.Body,
-		CreatedAt: comment.CreatedAt,
-	}
-}
-
 var commentType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Comment",
 	Fields: graphql.Fields{
-		"id":        &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-		"author":    &graphql.Field{Type: graphql.NewNonNull(memberType)},
+		"id": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"author": &graphql.Field{
+			Type: graphql.NewNonNull(memberType),
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				return GetMemberByUUID(params.Source.(Comment).AuthorUUID)
+			},
+		},
 		"body":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"createdAt": &graphql.Field{Type: graphql.NewNonNull(graphql.DateTime)},
 	},
@@ -89,6 +77,6 @@ var CreateCommentMutation = &graphql.Field{
 		if len(errs) > 0 {
 			return nil, errs[0]
 		}
-		return comment.toGraphQLType(), nil
+		return comment, nil
 	},
 }

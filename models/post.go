@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 	"time"
-	
+
 	"github.com/graphql-go/graphql"
 
 	"nagase/components/database"
@@ -21,44 +21,16 @@ type Post struct {
 	UpdatedAt time.Time
 }
 
-type PostType struct {
-	ID int `json:"int"`
-
-	Author   MemberType
-	Title    string
-	Body     string
-	Comments []CommentType
-
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-func (post Post) toGraphQLType() PostType {
-	author, _ := GetMemberByUUID(post.AuthorUUID)
-
-	var comments []Comment
-	database.DB.Where(&Comment{PostID: post.ID}).Find(&comments)
-	var commentTypes []CommentType
-	for _, v := range comments {
-		commentTypes = append(commentTypes, v.toGraphQLType())
-	}
-
-	return PostType{
-		ID:        post.ID,
-		Author:    author.toGraphQLType(),
-		Title:     post.Title,
-		Body:      post.Body,
-		Comments:  commentTypes,
-		CreatedAt: post.CreatedAt,
-		UpdatedAt: post.UpdatedAt,
-	}
-}
-
 var postType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Post",
 	Fields: graphql.Fields{
-		"id":         &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-		"author":     &graphql.Field{Type: graphql.NewNonNull(memberType)},
+		"id": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"author": &graphql.Field{
+			Type: graphql.NewNonNull(memberType),
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				return GetMemberByUUID(params.Source.(Post).AuthorUUID)
+			},
+		},
 		"title":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"body":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"comments":   &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(commentType))},
@@ -67,9 +39,24 @@ var postType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+func getPosts(boardID int, before int, count int) []Post {
+	if count == 0 {
+		count = 20
+	}
+
+	var posts []Post
+	query := database.DB.Where(Post{BoardID: boardID})
+	if before != 0 {
+		query = query.Where("id < ?", before)
+	}
+	query.Limit(count).Find(&posts)
+
+	return posts
+}
+
 // Queries
-var PostQuery = &graphql.Field {
-	Type: postType,
+var PostQuery = &graphql.Field{
+	Type:        postType,
 	Description: "게시물을 조회합니다.",
 	Args: graphql.FieldConfigArgument{
 		"postID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
@@ -95,18 +82,43 @@ var PostQuery = &graphql.Field {
 		if post.ID == 0 {
 			return nil, fmt.Errorf("bad request")
 		}
-		return post.toGraphQLType(), nil
+		return *post, nil
+	},
+}
+
+var PostsQuery = &graphql.Field{
+	Type:        graphql.NewList(graphql.NewNonNull(postType)),
+	Description: "게시물 목록을 조회합니다.",
+	Args: graphql.FieldConfigArgument{
+		"boardID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+		"before":  &graphql.ArgumentConfig{Type: graphql.Int},
+		"count":   &graphql.ArgumentConfig{Type: graphql.Int},
+	},
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		boardID, _ := params.Args["boardID"].(int)
+		before, _ := params.Args["before"].(int)
+		count, _ := params.Args["count"].(int)
+
+		return getPosts(boardID, before, count), nil
 	},
 }
 
 // Mutations
 var CreatePostMutation = &graphql.Field{
-	Type: postType,
+	Type:        postType,
 	Description: "게시글을 작성합니다.",
 	Args: graphql.FieldConfigArgument{
 		"boardID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
-		"title":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-		"body":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+		"PostInput": &graphql.ArgumentConfig{
+			Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
+				Name:        "PostInput",
+				Description: "게시물 작성/수정 InputObject",
+				Fields: graphql.InputObjectConfigFieldMap{
+					"title": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+					"body":  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+				},
+			})),
+		},
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		if params.Context.Value("member") == nil {
@@ -125,19 +137,18 @@ var CreatePostMutation = &graphql.Field{
 		}
 
 		// Create new post
-		title, _ := params.Args["title"].(string)
-		body, _ := params.Args["body"].(string)
+		postInput, _ := params.Args["PostInput"].(map[string]interface{})
 		post := Post{
 			BoardID:    boardID,
 			AuthorUUID: member.UUID,
-			Title:      title,
-			Body:       body,
+			Title:      postInput["title"].(string),
+			Body:       postInput["body"].(string),
 		}
 
 		errs := database.DB.Save(&post).GetErrors()
 		if len(errs) > 0 {
 			return nil, errs[0]
 		}
-		return post.toGraphQLType(), nil
+		return &post, nil
 	},
 }

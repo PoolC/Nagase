@@ -16,9 +16,9 @@ import (
 type Member struct {
 	UUID string `gorm:"type:varchar(40);PRIMARY_KEY"`
 
-	LoginID      string `gorm:"type:varchar(40);UNIQUE_INDEX`
-	PasswordHash []byte `gorm:"NOT NULL"`
-	PasswordSalt []byte `gorm:"NOT NULL"`
+	LoginID      string `gorm:"type:varchar(40);UNIQUE_INDEX"`
+	PasswordHash []byte `gorm:"NOT NULL" json:"-"`
+	PasswordSalt []byte `gorm:"NOT NULL" json:"-"`
 	Email        string `gorm:"type:varchar(255);UNIQUE_INDEX"`
 	Name         string `gorm:"type:varchar(40)"`
 	Department   string `gorm:"type:varchar(40)"`
@@ -29,37 +29,6 @@ type Member struct {
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
-}
-
-type MemberType struct {
-	UUID string
-
-	LoginID    string
-	Email      string
-	Name       string
-	Department string
-	StudentID  string
-
-	IsActivated bool
-	IsAdmin     bool
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
-func (member Member) toGraphQLType() MemberType {
-	return MemberType{
-		UUID:        member.UUID,
-		LoginID:     member.LoginID,
-		Email:       member.Email,
-		Name:        member.Name,
-		Department:  member.Department,
-		StudentID:   member.StudentID,
-		IsActivated: member.IsActivated,
-		IsAdmin:     member.IsAdmin,
-		CreatedAt:   member.CreatedAt,
-		UpdatedAt:   member.UpdatedAt,
-	}
 }
 
 func (member Member) ValidatePassword(password string) bool {
@@ -86,7 +55,7 @@ var MeQuery = &graphql.Field{
 	Type:        memberType,
 	Description: "자신의 회원 정보를 조회합니다.",
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-		return params.Context.Value("member").(*Member).toGraphQLType(), nil
+		return params.Context.Value("member").(*Member), nil
 	},
 }
 
@@ -95,9 +64,9 @@ var CreateMemberMutation = &graphql.Field{
 	Type:        memberType,
 	Description: "회원을 추가합니다.",
 	Args: graphql.FieldConfigArgument{
-		"Member": &graphql.ArgumentConfig{
+		"MemberInput": &graphql.ArgumentConfig{
 			Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
-				Name:        "Member",
+				Name:        "MemberInput",
 				Description: "회원가입 InputObject",
 				Fields: graphql.InputObjectConfigFieldMap{
 					"loginID":    &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
@@ -111,7 +80,7 @@ var CreateMemberMutation = &graphql.Field{
 		},
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-		memberInput := params.Args["Member"].(map[string]interface{})
+		memberInput := params.Args["MemberInput"].(map[string]interface{})
 
 		// Create member model.
 		salt := make([]byte, 32)
@@ -137,7 +106,7 @@ var CreateMemberMutation = &graphql.Field{
 			return nil, fmt.Errorf("failed to create member")
 		}
 
-		return member.toGraphQLType(), nil
+		return member, nil
 	},
 }
 

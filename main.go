@@ -22,6 +22,7 @@ func main() {
 				"me":     models.MeQuery,
 				"boards": models.BoardsQuery,
 				"post":   models.PostQuery,
+				"posts":  models.PostsQuery,
 			},
 		}),
 		Mutation: graphql.NewObject(graphql.ObjectConfig{
