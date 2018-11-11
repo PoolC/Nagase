@@ -21,10 +21,10 @@ github.com/gorilla/handlers v1.4.0 h1:XulKRWSQK5uChr4pEgSE4Tc/OcmnU9GJuSwdog/tZs
 github.com/gorilla/handlers v1.4.0/go.mod h1:Qkdc/uu4tH4g6mTK6auzZ766c4CA0Ng8+o/OAirnOIQ=
 github.com/graphql-go/graphql v0.7.6 h1:3Bn1IFB5OvPoANEfu03azF8aMyks0G/H6G1XeTfYbM4=
 github.com/graphql-go/graphql v0.7.6/go.mod h1:k6yrAYQaSP59DC5UVxbgxESlmVyojThKdORUqGDGmrI=
-github.com/graphql-go/handler v0.2.1 h1:WbIbeiYSkLEB0yLqjfsPGZWquZIXCD79RYvEsfnRJ1c=
-github.com/graphql-go/handler v0.2.1/go.mod h1:leLF6RpV5uZMN1CdImAxuiayrYYhOk33bZciaUGaXeU=
 github.com/graphql-go/handler v0.2.2-0.20180922162246-83cde2468fa5 h1:br+PXgQU2ohUCZSb179Hk6MmBa3IVUmwWvh/0ULTe1s=
 github.com/graphql-go/handler v0.2.2-0.20180922162246-83cde2468fa5/go.mod h1:leLF6RpV5uZMN1CdImAxuiayrYYhOk33bZciaUGaXeU=
+github.com/h2non/filetype v1.0.5 h1:Esu2EFM5vrzNynnGQpj0nxhCkzVQh2HRY7AXUh/dyJM=
+github.com/h2non/filetype v1.0.5/go.mod h1:isekKqOuhMj+s/7r3rIeTErIRy4Rub5uBWHfvMusLMU=
 github.com/jinzhu/gorm v1.9.1 h1:lDSDtsCt5AGGSKTs8AHlSDbbgif4G4+CKJ8ETBDVHTA=
 github.com/jinzhu/gorm v1.9.1/go.mod h1:Vla75njaFJ8clLU1W44h34PjIkijhjHIYnZxMqCdxqo=
 github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a h1:eeaG9XMUvRBYXJi4pg1ZKM7nxc5AfXfojeLLW7O5J3k=
@@ -56,3 +56,5 @@ google.golang.org/appengine v1.2.0 h1:S0iUepdCWODXRvtE+gcRDd15L+k+k1AiHlMiMjefH2
 google.golang.org/appengine v1.2.0/go.mod h1:xpcJRLb0r/rnEns0DIKYYv+WjYCduHsrkT7/EB5XEv4=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 h1:qIbj1fsPNlZgppZ+VLlY7N33q108Sa+fhmuc+sWQYwY=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/h2non/filetype.v1 v1.0.5 h1:CC1jjJjoEhNVbMhXYalmGBhOBK2V70Q1N850wt/98/Y=
+gopkg.in/h2non/filetype.v1 v1.0.5/go.mod h1:M0yem4rwSX5lLVrkEuRRp2/NinFMD5vgJ4DlAhZcfNo=

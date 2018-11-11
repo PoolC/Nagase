@@ -13,6 +13,7 @@ require (
 	github.com/gorilla/handlers v1.4.0
 	github.com/graphql-go/graphql v0.7.6
 	github.com/graphql-go/handler v0.2.2-0.20180922162246-83cde2468fa5
+	github.com/h2non/filetype v1.0.5
 	github.com/jinzhu/gorm v1.9.1
 	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a // indirect
 	github.com/jinzhu/now v0.0.0-20180511015916-ed742868f2ae // indirect
@@ -26,4 +27,5 @@ require (
 	golang.org/x/sys v0.0.0-20180921163948-d47a0f339242 // indirect
 	google.golang.org/appengine v1.2.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
+	gopkg.in/h2non/filetype.v1 v1.0.5 // indirect
 )

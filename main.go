@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -69,6 +71,67 @@ func main() {
 		}
 
 		h.ContextHandler(ctx, w, r)
+	})))
+	server.Handle("/files/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Parse fileName.
+		paths := strings.Split(r.URL.Path, "/")
+		if len(paths) != 3 {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		fileName := paths[2]
+
+		// CORS configurations.
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization")
+
+		if r.Method == "GET" {
+			buffer, contentType, err := models.GetFile(fileName)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			if contentType != "" {
+				w.Header().Set("Content-Type", contentType)
+			}
+			io.Copy(w, buffer)
+		} else if r.Method == "POST" {
+			// Only logged-in member can upload new files.
+			authorization := r.Header.Get("Authorization")
+			if authorization == "" {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			memberUUID, _, err := auth.ValidatedToken(strings.Split(authorization, " ")[1])
+			if memberUUID == "" || err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			// Limit file size to 5MB.
+			r.Body = http.MaxBytesReader(w, r.Body, 5 * 1024 * 1024)
+
+			// Get bytes from the HTTP request.
+			var buffer bytes.Buffer
+			upload, _, err := r.FormFile("upload")
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			io.Copy(&buffer, upload)
+
+			// Save file
+			err = models.SaveFile(&buffer, fileName)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return 
+			}
+			w.WriteHeader(http.StatusOK)
+		} else {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
 	})))
 
 	http.ListenAndServe(":8080", handlers.CompressHandler(server))

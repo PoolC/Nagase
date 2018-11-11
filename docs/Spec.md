@@ -1,11 +1,15 @@
-# GraphQL API Specifications
+# API Specifications
 
 ## 변경 내역
 
   - 2018-09-23 : 최초 작성
 
 
-## 요청과 응답
+## GrpahQL API
+
+GraphQL 인터페이스를 이용한 API입니다. 파일 관련 동작을 제외한 모든 동작은 GraphQL API를 통해 이루어집니다.
+
+### 요청 방법
 
 요청은 GET, POST 두 가지 방식을 지원합니다. 아래는 각 방식으로 자신의 UUID를 조회하는 예제입니다.
 
@@ -41,8 +45,7 @@ createMember, createAccessToken mutation을 제외한 모든 API 요청에는 �
 
 인증에 실패한 경우, 401 Unauthorized 응답이 반환됩니다.
 
-
-## 자료형
+### 자료형
 
 이하 문서는 [GraphQL 자료형](https://graphql.org/learn/schema/)의 표현식을 따릅니다.
 
@@ -52,176 +55,26 @@ createMember, createAccessToken mutation을 제외한 모든 API 요청에는 �
   - Boolean : 참/거짓
   - DateTime : [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) 형태로 포매팅 된 날짜/시각 정보 문자열
 
+### 스펙
 
-## 모델
-
-  - AccessToken
-  - Board
-  - Comment
-  - Member
-  - Post
-
-### AccessToken
-
-로그인 후 발급되는 Access Token입니다.
-
-```graphql
-type AccessToken {
-  key:  String!
-}
-```
-
-### Board
-
-게시판입니다.
-
-```graphql
-type Board {
-  id:              Int!
-  name:            String!           # UI상으로 노출되는 이름
-  urlPath:         String!           # URL 상으로 표현되는 경로
-  readPermission:  BoardPermission!
-  writePermission: BoardPermission!
-  posts:           [Post!]!
-}
-
-enum BoardPermission {
-  PUBLIC
-  MEMBER
-  ADMIN
-}
-```
-
-### Comment
-
-게시물(Post)의 댓글입니다.
-
-```graphql
-type Comment {
-  id:        Int!
-  author:    Member!
-  body:      String!
-  createdAt: DateTime!
-}
-```
-
-### Member
-
-회원 정보입니다.
-
-```graphql
-type Member {
-  uuid:        ID!
-  loginID:     String!
-  email:       String!
-  name:        String!
-  department:  String!
-  studentId:   String!
-  isActivated: Boolean!
-  isAdmin:     Boolean!
-}
-```
-
-### Post
-
-게시물입니다.
-
-```graphql
-type Post {
-  id:        Int!
-  author:    User!
-  title:     String!
-  body:      String!
-  comments:  [Comment!]!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-}
-```
+[GraphQL Playground](http://nagase.lynlab.co.kr/graphql)에서 스펙을 확인할 수 있습니다.
 
 
-## Query
+## FIle API
 
-  - me
-  - boards
-  - post
-  - posts
+파일을 업로드, 다운로드 하기 위한 API 입니다.
 
-### me
+### 요청 방법
 
-자신의 회원 정보를 조회합니다.
+요청은 일반적인 RESTful API의 형태로 이루어집니다.
 
-응답 모델 : [Member!](#member)
+  - `GET  /files/{fileName}`
+  - `POST /files/{fileName}`
 
-### boards
+POST 요청에는 인증이 필요합니다. 인증 방식은 GraphQL API와 동일합니다.
 
-게시판 목록을 조회합니다.
+#### GET /files/{fileName}
 
-응답 모델 : [[Board!](#board)]!
+#### POST /files/{fileName}
 
-### post
-
-게시물을 조회합니다.
-
-  - `boardID` (Int!) : 게시판 ID
-
-응답 모델 : [Post!](#post)
-
-### posts
-
-게시물 목록을 조회합니다.
-
-파라미터 :
-
-  - `boardID` (Int!) : 게시판 ID
-
-응답 모델 : [[Post!][#post]]!
-
-
-## Mutation
-
-  - [createAccessToken](#createaccesstoken)
-  - [createComment](#createcomment)
-  - [createMember](#createmember)
-  - [createPost](#createpost)
-
-### createAccessToken
-
-Access Token을 발급합니다.
-
-요청 :
-
-```graphql
-input Login {
-  loginID:  String!
-  password: String!
-}
-```
-
-응답 모델 : [AccessToken!](#accesstoken)
-
-### createComment
-
-댓글을 작성합니다.
-
-### createMember
-
-회원을 추가합니다.
-
-요청:
-
-```graphql
-input Member {
-  loginID:     String!
-  password:    String!
-  email:       String!
-  name:        String!
-  department:  String!
-  studentID:   String!
-}
-```
-
-응답 모델 : [Member!](#member)
-
-### createPost
-
-게시물을 작성합니다.
+Formdata의 multipart 업로드를 지원합니다. 업로드 할 파일의 form name은 `upload`로 지정해야합니다.
