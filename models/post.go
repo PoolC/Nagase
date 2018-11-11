@@ -49,7 +49,7 @@ func getPosts(boardID int, before int, count int) []Post {
 	if before != 0 {
 		query = query.Where("id < ?", before)
 	}
-	query.Limit(count).Find(&posts)
+	query.Limit(count).Order("id desc").Find(&posts)
 
 	return posts
 }
@@ -88,7 +88,7 @@ var PostQuery = &graphql.Field{
 
 var PostsQuery = &graphql.Field{
 	Type:        graphql.NewList(graphql.NewNonNull(postType)),
-	Description: "게시물 목록을 조회합니다.",
+	Description: "게시물 목록을 조회합니다. 해당 게시판에 읽기 권한이 있어야합니다. 게시물은 ID의 내림차순으로 반환합니다.",
 	Args: graphql.FieldConfigArgument{
 		"boardID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
 		"before":  &graphql.ArgumentConfig{Type: graphql.Int},
@@ -104,21 +104,26 @@ var PostsQuery = &graphql.Field{
 }
 
 // Mutations
+var postInputType = &graphql.ArgumentConfig{
+	Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
+		Name:        "PostInput",
+		Description: "게시물 작성/수정 InputObject",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"title": &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"body":  &graphql.InputObjectFieldConfig{Type: graphql.String},
+		},
+	})),
+}
+
 var CreatePostMutation = &graphql.Field{
 	Type:        postType,
-	Description: "게시글을 작성합니다.",
+	Description: "게시물을 작성합니다. 해당 게시판에 쓰기 권한이 있어야합니다.",
 	Args: graphql.FieldConfigArgument{
-		"boardID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
-		"PostInput": &graphql.ArgumentConfig{
-			Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
-				Name:        "PostInput",
-				Description: "게시물 작성/수정 InputObject",
-				Fields: graphql.InputObjectConfigFieldMap{
-					"title": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-					"body":  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-				},
-			})),
+		"boardID": &graphql.ArgumentConfig{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "게시물을 작성할 게시판의 ID",
 		},
+		"PostInput": postInputType,
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		if params.Context.Value("member") == nil {
@@ -150,5 +155,72 @@ var CreatePostMutation = &graphql.Field{
 			return nil, errs[0]
 		}
 		return &post, nil
+	},
+}
+
+var UpdatePostMutation = &graphql.Field{
+	Type:        postType,
+	Description: "게시물을 수정합니다. 게시물의 작성자이어야 합니다.",
+	Args: graphql.FieldConfigArgument{
+		"postID": &graphql.ArgumentConfig{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "수정할 게시물의 ID",
+		},
+		"PostInput": postInputType,
+	},
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		// Check permission to the post.
+		if params.Context.Value("member") == nil {
+			return nil, fmt.Errorf("unauthorized")
+		}
+		member := params.Context.Value("member").(*Member)
+
+		var post Post
+		postID, _ := params.Args["postID"].(int)
+		database.DB.Where(&Post{ID: postID}).First(&post)
+		if post.ID == 0 || post.AuthorUUID != member.UUID {
+			return nil, fmt.Errorf("unauthorized")
+		}
+
+		// Update the post.
+		postInput, _ := params.Args["PostInput"].(map[string]interface{})
+		if postInput["title"] != nil {
+			post.Title = postInput["title"].(string)
+		}
+		if postInput["body"] != nil {
+			post.Body = postInput["body"].(string)
+		}
+		database.DB.Save(&post)
+
+		return post, nil
+	},
+}
+
+var DeletePostMutation = &graphql.Field{
+	Type:        postType,
+	Description: "게시물을 삭제합니다. 게시물의 작성자이거나 관리자 권한이 필요합니다.",
+	Args: graphql.FieldConfigArgument{
+		"postID": &graphql.ArgumentConfig{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "삭제할 게시물의 ID",
+		},
+	},
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		// Check permission to the post.
+		if params.Context.Value("member") == nil {
+			return nil, fmt.Errorf("unauthorized")
+		}
+		member := params.Context.Value("member").(*Member)
+
+		var post Post
+		postID, _ := params.Args["postID"].(int)
+		database.DB.Where(&Post{ID: postID}).First(&post)
+		if post.ID == 0 || (!member.IsAdmin && post.AuthorUUID != member.UUID) {
+			return nil, fmt.Errorf("unauthorized")
+		}
+
+		// Delete the post.
+		database.DB.Delete(&post)
+		return post, nil
 	},
 }

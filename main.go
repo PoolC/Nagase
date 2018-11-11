@@ -31,9 +31,11 @@ func main() {
 			Name: "RootMutation",
 			Fields: graphql.Fields{
 				"createAccessToken": models.CreateAccessTokenMutation,
+				"createComment":     models.CreateCommentMutation,
 				"createMember":      models.CreateMemberMutation,
 				"createPost":        models.CreatePostMutation,
-				"createComment":     models.CreateCommentMutation,
+				"deletePost":        models.DeletePostMutation,
+				"updatePost":        models.UpdatePostMutation,
 			},
 		}),
 	})
