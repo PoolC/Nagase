@@ -131,6 +131,8 @@ func main() {
 				return 
 			}
 			w.WriteHeader(http.StatusOK)
+		} else if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
 		} else {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
