@@ -50,6 +50,19 @@ var memberType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+var memberInputType = graphql.NewInputObject(graphql.InputObjectConfig{
+	Name:        "MemberInput",
+	Description: "회원가입 InputObject",
+	Fields: graphql.InputObjectConfigFieldMap{
+		"loginID":    &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"password":   &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"email":      &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"name":       &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"department": &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"studentID":  &graphql.InputObjectFieldConfig{Type: graphql.String},
+	},
+})
+
 // Queries
 var MeQuery = &graphql.Field{
 	Type:        memberType,
@@ -64,20 +77,7 @@ var CreateMemberMutation = &graphql.Field{
 	Type:        memberType,
 	Description: "회원을 추가합니다.",
 	Args: graphql.FieldConfigArgument{
-		"MemberInput": &graphql.ArgumentConfig{
-			Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
-				Name:        "MemberInput",
-				Description: "회원가입 InputObject",
-				Fields: graphql.InputObjectConfigFieldMap{
-					"loginID":    &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-					"password":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-					"email":      &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-					"name":       &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-					"department": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-					"studentID":  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-				},
-			})),
-		},
+		"MemberInput": &graphql.ArgumentConfig{Type: graphql.NewNonNull(memberInputType)},
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		memberInput := params.Args["MemberInput"].(map[string]interface{})
@@ -110,11 +110,58 @@ var CreateMemberMutation = &graphql.Field{
 	},
 }
 
+var UpdateMemberMutation = &graphql.Field{
+	Type:        memberType,
+	Description: "회원 정보를 수정합니다. 본인만 수정할 수 있습니다.",
+	Args: graphql.FieldConfigArgument{
+		"MemberInput": &graphql.ArgumentConfig{Type: graphql.NewNonNull(memberInputType)},
+	},
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		if params.Context.Value("member") == nil {
+			return nil, fmt.Errorf("unauthorized")
+		}
+
+		// Read member from database to keep persistence.
+		member, _ := GetMemberByUUID(params.Context.Value("member").(*Member).UUID)
+
+		// Updated fields except password.
+		memberInput := params.Args["MemberInput"].(map[string]interface{})
+		if memberInput["loginID"] != nil {
+			member.LoginID = memberInput["loginID"].(string)
+		}
+		if memberInput["email"] != nil {
+			member.Email = memberInput["email"].(string)
+		}
+		if memberInput["name"] != nil {
+			member.Name = memberInput["name"].(string)
+		}
+		if memberInput["department"] != nil {
+			member.Department = memberInput["department"].(string)
+		}
+		if memberInput["studentID"] != nil {
+			member.StudentID = memberInput["studentID"].(string)
+		}
+
+		// Update password (if requested).
+		if memberInput["password"] != nil {
+			hash := argon2.IDKey([]byte(memberInput["password"].(string)), member.PasswordSalt, 1, 8*1024, 4, 32)
+			member.PasswordHash = hash
+		}
+
+		errs := database.DB.Save(&member).GetErrors()
+		if len(errs) > 0 {
+			return nil, errs[0]
+		}
+		return member, nil
+	},
+}
+
+// Common functions
 func GetMemberByUUID(uuid string) (*Member, error) {
-	member := new(Member)
+	var member Member
 	database.DB.Where(&Member{UUID: uuid}).First(&member)
 	if member.LoginID == "" {
 		return nil, fmt.Errorf("invalid member uuid")
 	}
-	return member, nil
+	return &member, nil
 }

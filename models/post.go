@@ -31,9 +31,16 @@ var postType = graphql.NewObject(graphql.ObjectConfig{
 				return GetMemberByUUID(params.Source.(Post).AuthorUUID)
 			},
 		},
-		"title":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"body":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"comments":   &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(commentType))},
+		"title": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"body":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"comments": &graphql.Field{
+			Type: graphql.NewList(graphql.NewNonNull(commentType)),
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				var comments []Comment
+				database.DB.Where(&Comment{PostID: params.Source.(Post).ID}).Find(&comments)
+				return comments, nil
+			},
+		},
 		"created_at": &graphql.Field{Type: graphql.NewNonNull(graphql.DateTime)},
 		"updated_at": &graphql.Field{Type: graphql.NewNonNull(graphql.DateTime)},
 	},
@@ -62,27 +69,27 @@ var PostQuery = &graphql.Field{
 		"postID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-		member := params.Context.Value("member").(*Member)
-
-		// Get board and check permission
-		boardID, _ := params.Args["boardID"].(int)
-		board := new(Board)
-		database.DB.Where(&Board{ID: boardID}).First(&board)
-		if board.Name == "" {
-			return nil, fmt.Errorf("bad request")
-		} else if (board.ReadPermission != "PUBLIC" && member == nil) || (board.ReadPermission == "ADMIN" && !member.IsAdmin) {
-			return nil, fmt.Errorf("forbidden")
+		var member *Member
+		if memberCtx := params.Context.Value("member"); memberCtx != nil {
+			member = memberCtx.(*Member)
 		}
 
 		// Get post
 		postID, _ := params.Args["postID"].(int)
-
-		post := new(Post)
+		var post Post
 		database.DB.Where(&Post{ID: postID}).First(&post)
 		if post.ID == 0 {
 			return nil, fmt.Errorf("bad request")
 		}
-		return *post, nil
+
+		// Get board and check permission
+		var board Board
+		database.DB.Where(&Board{ID: post.BoardID}).First(&board)
+		if (board.ReadPermission != "PUBLIC" && member == nil) || (board.ReadPermission == "ADMIN" && !member.IsAdmin) {
+			return nil, fmt.Errorf("forbidden")
+		}
+
+		return post, nil
 	},
 }
 
@@ -95,7 +102,19 @@ var PostsQuery = &graphql.Field{
 		"count":   &graphql.ArgumentConfig{Type: graphql.Int},
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		var member *Member
+		if memberCtx := params.Context.Value("member"); memberCtx != nil {
+			member = memberCtx.(*Member)
+		}
+
+		// Get board and check permission
+		var board Board
 		boardID, _ := params.Args["boardID"].(int)
+		database.DB.Where(&Board{ID: boardID}).First(&board)
+		if (board.ReadPermission != "PUBLIC" && member == nil) || (board.ReadPermission == "ADMIN" && !member.IsAdmin) {
+			return nil, fmt.Errorf("forbidden")
+		}
+
 		before, _ := params.Args["before"].(int)
 		count, _ := params.Args["count"].(int)
 

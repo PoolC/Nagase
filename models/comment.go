@@ -36,7 +36,7 @@ var commentType = graphql.NewObject(graphql.ObjectConfig{
 
 // Mutations
 var CreateCommentMutation = &graphql.Field{
-	Type:        postType,
+	Type:        commentType,
 	Description: "댓글을 작성합니다.",
 	Args: graphql.FieldConfigArgument{
 		"postID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
@@ -77,6 +77,37 @@ var CreateCommentMutation = &graphql.Field{
 		if len(errs) > 0 {
 			return nil, errs[0]
 		}
+		return comment, nil
+	},
+}
+
+var DeleteCommentMutation = &graphql.Field{
+	Type:        commentType,
+	Description: "댓글을 삭제합니다. 작성자 본인 또는 관리자만 댓글을 삭제할 수 있습니다.",
+	Args: graphql.FieldConfigArgument{
+		"commentID": &graphql.ArgumentConfig{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "삭제할 댓글의 ID",
+		},
+	},
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		if params.Context.Value("member") == nil {
+			return nil, fmt.Errorf("unauthorized")
+		}
+		member := params.Context.Value("member").(*Member)
+
+		// Get comment and check permission.
+		var comment Comment
+		commentID, _ := params.Args["commentID"].(int)
+		database.DB.Where(&Comment{ID: commentID}).First(&comment)
+		if comment.ID == 0 {
+			return nil, fmt.Errorf("bad request")
+		} else if comment.AuthorUUID != member.UUID && !member.IsAdmin {
+			return nil, fmt.Errorf("forbidden")
+		}
+
+		// Delete the comment.
+		database.DB.Delete(&comment)
 		return comment, nil
 	},
 }

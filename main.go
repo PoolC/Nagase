@@ -32,7 +32,9 @@ func main() {
 			Fields: graphql.Fields{
 				"createAccessToken": models.CreateAccessTokenMutation,
 				"createComment":     models.CreateCommentMutation,
+				"deleteComment":     models.DeleteCommentMutation,
 				"createMember":      models.CreateMemberMutation,
+				"updateMember":      models.UpdateMemberMutation,
 				"createPost":        models.CreatePostMutation,
 				"deletePost":        models.DeletePostMutation,
 				"updatePost":        models.UpdatePostMutation,
