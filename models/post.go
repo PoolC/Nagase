@@ -41,8 +41,8 @@ var postType = graphql.NewObject(graphql.ObjectConfig{
 				return comments, nil
 			},
 		},
-		"created_at": &graphql.Field{Type: graphql.NewNonNull(graphql.DateTime)},
-		"updated_at": &graphql.Field{Type: graphql.NewNonNull(graphql.DateTime)},
+		"createdAt": &graphql.Field{Type: graphql.NewNonNull(graphql.DateTime)},
+		"updatedAt": &graphql.Field{Type: graphql.NewNonNull(graphql.DateTime)},
 	},
 })
 
@@ -79,14 +79,14 @@ var PostQuery = &graphql.Field{
 		var post Post
 		database.DB.Where(&Post{ID: postID}).First(&post)
 		if post.ID == 0 {
-			return nil, fmt.Errorf("bad request")
+			return nil, fmt.Errorf("ERR400")
 		}
 
 		// Get board and check permission
 		var board Board
 		database.DB.Where(&Board{ID: post.BoardID}).First(&board)
 		if (board.ReadPermission != "PUBLIC" && member == nil) || (board.ReadPermission == "ADMIN" && !member.IsAdmin) {
-			return nil, fmt.Errorf("forbidden")
+			return nil, fmt.Errorf("ERR403")
 		}
 
 		return post, nil
@@ -112,7 +112,7 @@ var PostsQuery = &graphql.Field{
 		boardID, _ := params.Args["boardID"].(int)
 		database.DB.Where(&Board{ID: boardID}).First(&board)
 		if (board.ReadPermission != "PUBLIC" && member == nil) || (board.ReadPermission == "ADMIN" && !member.IsAdmin) {
-			return nil, fmt.Errorf("forbidden")
+			return nil, fmt.Errorf("ERR403")
 		}
 
 		before, _ := params.Args["before"].(int)
@@ -146,7 +146,7 @@ var CreatePostMutation = &graphql.Field{
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		if params.Context.Value("member") == nil {
-			return nil, fmt.Errorf("unauthorized")
+			return nil, fmt.Errorf("ERR401")
 		}
 		member := params.Context.Value("member").(*Member)
 
@@ -155,9 +155,9 @@ var CreatePostMutation = &graphql.Field{
 		board := new(Board)
 		database.DB.Where(&Board{ID: boardID}).First(&board)
 		if board.Name == "" {
-			return nil, fmt.Errorf("bad request")
+			return nil, fmt.Errorf("ERR400")
 		} else if board.WritePermission == "ADMIN" && !member.IsAdmin {
-			return nil, fmt.Errorf("forbidden")
+			return nil, fmt.Errorf("ERR403")
 		}
 
 		// Create new post
@@ -190,7 +190,7 @@ var UpdatePostMutation = &graphql.Field{
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		// Check permission to the post.
 		if params.Context.Value("member") == nil {
-			return nil, fmt.Errorf("unauthorized")
+			return nil, fmt.Errorf("ERR401")
 		}
 		member := params.Context.Value("member").(*Member)
 
@@ -198,7 +198,7 @@ var UpdatePostMutation = &graphql.Field{
 		postID, _ := params.Args["postID"].(int)
 		database.DB.Where(&Post{ID: postID}).First(&post)
 		if post.ID == 0 || post.AuthorUUID != member.UUID {
-			return nil, fmt.Errorf("unauthorized")
+			return nil, fmt.Errorf("ERR401")
 		}
 
 		// Update the post.
@@ -227,7 +227,7 @@ var DeletePostMutation = &graphql.Field{
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		// Check permission to the post.
 		if params.Context.Value("member") == nil {
-			return nil, fmt.Errorf("unauthorized")
+			return nil, fmt.Errorf("ERR401")
 		}
 		member := params.Context.Value("member").(*Member)
 
@@ -235,7 +235,7 @@ var DeletePostMutation = &graphql.Field{
 		postID, _ := params.Args["postID"].(int)
 		database.DB.Where(&Post{ID: postID}).First(&post)
 		if post.ID == 0 || (!member.IsAdmin && post.AuthorUUID != member.UUID) {
-			return nil, fmt.Errorf("unauthorized")
+			return nil, fmt.Errorf("ERR401")
 		}
 
 		// Delete the post.

@@ -42,13 +42,13 @@ var CreateAccessTokenMutation = &graphql.Field{
 		member := new(Member)
 		database.DB.Where(&Member{LoginID: loginInput["loginID"].(string)}).First(&member)
 		if member.UUID == "" || !member.ValidatePassword(loginInput["password"].(string)) || !member.IsActivated {
-			return nil, fmt.Errorf("invalid login id or password")
+			return nil, fmt.Errorf("TKN000")
 		}
 
 		// If token not exists or expired, generate new token.
 		key, err := auth.GenerateToken(member.UUID, member.IsAdmin)
 		if err != nil {
-			return nil, fmt.Errorf("unknown error")
+			return nil, fmt.Errorf("ERR500")
 		}
 
 		return AccessToken{Key: key}, nil

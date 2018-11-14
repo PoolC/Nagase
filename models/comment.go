@@ -44,7 +44,7 @@ var CreateCommentMutation = &graphql.Field{
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		if params.Context.Value("member") == nil {
-			return nil, fmt.Errorf("unauthorized")
+			return nil, fmt.Errorf("ERR401")
 		}
 		member := params.Context.Value("member").(*Member)
 
@@ -54,15 +54,15 @@ var CreateCommentMutation = &graphql.Field{
 		post := new(Post)
 		database.DB.Where(&Post{ID: postID}).First(&post)
 		if post.ID == 0 {
-			return nil, fmt.Errorf("bad request")
+			return nil, fmt.Errorf("ERR400")
 		}
 
 		board := new(Board)
 		database.DB.Where(&Board{ID: post.BoardID}).First(&board)
 		if board.ID == 0 {
-			return nil, fmt.Errorf("bad request")
+			return nil, fmt.Errorf("ERR400")
 		} else if board.ReadPermission == "ADMIN" && !member.IsAdmin {
-			return nil, fmt.Errorf("forbidden")
+			return nil, fmt.Errorf("ERR403")
 		}
 
 		// Create new comment
@@ -92,7 +92,7 @@ var DeleteCommentMutation = &graphql.Field{
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		if params.Context.Value("member") == nil {
-			return nil, fmt.Errorf("unauthorized")
+			return nil, fmt.Errorf("ERR401")
 		}
 		member := params.Context.Value("member").(*Member)
 
@@ -101,9 +101,9 @@ var DeleteCommentMutation = &graphql.Field{
 		commentID, _ := params.Args["commentID"].(int)
 		database.DB.Where(&Comment{ID: commentID}).First(&comment)
 		if comment.ID == 0 {
-			return nil, fmt.Errorf("bad request")
+			return nil, fmt.Errorf("ERR400")
 		} else if comment.AuthorUUID != member.UUID && !member.IsAdmin {
-			return nil, fmt.Errorf("forbidden")
+			return nil, fmt.Errorf("ERR403")
 		}
 
 		// Delete the comment.

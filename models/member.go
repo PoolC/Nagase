@@ -20,6 +20,7 @@ type Member struct {
 	PasswordHash []byte `gorm:"NOT NULL" json:"-"`
 	PasswordSalt []byte `gorm:"NOT NULL" json:"-"`
 	Email        string `gorm:"type:varchar(255);UNIQUE_INDEX"`
+	PhoneNumber  string `gorm:"type:varchar(20)"`
 	Name         string `gorm:"type:varchar(40)"`
 	Department   string `gorm:"type:varchar(40)"`
 	StudentID    string `gorm:"type:varchar(40);UNIQUE_INDEX"`
@@ -42,6 +43,7 @@ var memberType = graphql.NewObject(graphql.ObjectConfig{
 		"uuid":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"loginID":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"email":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"phoneNumber": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"name":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"department":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"studentID":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -54,12 +56,13 @@ var memberInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name:        "MemberInput",
 	Description: "회원가입 InputObject",
 	Fields: graphql.InputObjectConfigFieldMap{
-		"loginID":    &graphql.InputObjectFieldConfig{Type: graphql.String},
-		"password":   &graphql.InputObjectFieldConfig{Type: graphql.String},
-		"email":      &graphql.InputObjectFieldConfig{Type: graphql.String},
-		"name":       &graphql.InputObjectFieldConfig{Type: graphql.String},
-		"department": &graphql.InputObjectFieldConfig{Type: graphql.String},
-		"studentID":  &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"loginID":     &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"password":    &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"email":       &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"phoneNumber": &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"name":        &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"department":  &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"studentID":   &graphql.InputObjectFieldConfig{Type: graphql.String},
 	},
 })
 
@@ -68,6 +71,9 @@ var MeQuery = &graphql.Field{
 	Type:        memberType,
 	Description: "자신의 회원 정보를 조회합니다.",
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		if params.Context.Value("member") == nil {
+			return nil, fmt.Errorf("ERR401")
+		}
 		return params.Context.Value("member").(*Member), nil
 	},
 }
@@ -82,6 +88,17 @@ var CreateMemberMutation = &graphql.Field{
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		memberInput := params.Args["MemberInput"].(map[string]interface{})
 
+		// Find duplicated member info, and return error if exists.
+		var existingMember Member
+		database.DB.Where(&Member{LoginID: memberInput["loginID"].(string)}).First(&existingMember)
+		if existingMember.UUID != "" {
+			return nil, fmt.Errorf("MEM000")
+		}
+		database.DB.Where(&Member{Email: memberInput["email"].(string)}).First(&existingMember)
+		if existingMember.UUID != "" {
+			return nil, fmt.Errorf("MEM001")
+		}
+
 		// Create member model.
 		salt := make([]byte, 32)
 		rand.Read(salt)
@@ -93,6 +110,7 @@ var CreateMemberMutation = &graphql.Field{
 			PasswordHash: hash,
 			PasswordSalt: salt,
 			Email:        memberInput["email"].(string),
+			PhoneNumber:  memberInput["phoneNumber"].(string),
 			Name:         memberInput["name"].(string),
 			Department:   memberInput["department"].(string),
 			StudentID:    memberInput["studentID"].(string),
@@ -118,7 +136,7 @@ var UpdateMemberMutation = &graphql.Field{
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		if params.Context.Value("member") == nil {
-			return nil, fmt.Errorf("unauthorized")
+			return nil, fmt.Errorf("ERR401")
 		}
 
 		// Read member from database to keep persistence.
@@ -126,20 +144,11 @@ var UpdateMemberMutation = &graphql.Field{
 
 		// Updated fields except password.
 		memberInput := params.Args["MemberInput"].(map[string]interface{})
-		if memberInput["loginID"] != nil {
-			member.LoginID = memberInput["loginID"].(string)
-		}
 		if memberInput["email"] != nil {
 			member.Email = memberInput["email"].(string)
 		}
-		if memberInput["name"] != nil {
-			member.Name = memberInput["name"].(string)
-		}
-		if memberInput["department"] != nil {
-			member.Department = memberInput["department"].(string)
-		}
-		if memberInput["studentID"] != nil {
-			member.StudentID = memberInput["studentID"].(string)
+		if memberInput["phoneNumber"] != nil {
+			member.PhoneNumber = memberInput["phoneNumber"].(string)
 		}
 
 		// Update password (if requested).
