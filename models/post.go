@@ -25,6 +25,7 @@ type Post struct {
 var postType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Post",
 	Fields: graphql.Fields{
+		// To ignore circular dependency, `board` field has initialized lazily on init() method.
 		"id": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 		"author": &graphql.Field{
 			Type: graphql.NewNonNull(memberType),
@@ -294,4 +295,15 @@ var DeletePostMutation = &graphql.Field{
 		database.DB.Delete(&post)
 		return post, nil
 	},
+}
+
+func init() {
+	postType.AddFieldConfig("board", &graphql.Field{
+		Type: graphql.NewNonNull(boardType),
+		Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+			var board Board
+			database.DB.Where(&Board{ID: params.Source.(Post).BoardID}).First(&board)
+			return board, nil
+		},
+	})
 }
