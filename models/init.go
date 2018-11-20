@@ -8,5 +8,8 @@ func init() {
 		&Member{},
 		&Post{},
 		&Comment{},
+		&Vote{},
+		&VoteOption{},
+		&VoteSelection{},
 	)
 }

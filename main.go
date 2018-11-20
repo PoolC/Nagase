@@ -25,6 +25,7 @@ func main() {
 				"boards": models.BoardsQuery,
 				"post":   models.PostQuery,
 				"posts":  models.PostsQuery,
+				"vote":   models.VoteQuery,
 			},
 		}),
 		Mutation: graphql.NewObject(graphql.ObjectConfig{
@@ -38,6 +39,7 @@ func main() {
 				"createPost":        models.CreatePostMutation,
 				"deletePost":        models.DeletePostMutation,
 				"updatePost":        models.UpdatePostMutation,
+				"selectVoteOption":  models.SelectVoteOptionMutation,
 			},
 		}),
 	})

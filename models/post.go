@@ -16,6 +16,7 @@ type Post struct {
 	AuthorUUID string `gorm:"type:varchar(40)"`
 	Title      string
 	Body       string
+	VoteID     *int
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -33,6 +34,18 @@ var postType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"title": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"body":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"vote": &graphql.Field{
+			Type: voteType,
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				if params.Source.(Post).VoteID == nil {
+					return nil, nil
+				}
+
+				var vote Vote
+				database.DB.Where(&Vote{ID: *params.Source.(Post).VoteID}).First(&vote)
+				return vote, nil
+			},
+		},
 		"comments": &graphql.Field{
 			Type: graphql.NewList(graphql.NewNonNull(commentType)),
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
@@ -123,16 +136,14 @@ var PostsQuery = &graphql.Field{
 }
 
 // Mutations
-var postInputType = &graphql.ArgumentConfig{
-	Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
-		Name:        "PostInput",
-		Description: "게시물 작성/수정 InputObject",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"title": &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"body":  &graphql.InputObjectFieldConfig{Type: graphql.String},
-		},
-	})),
-}
+var postInputType = graphql.NewInputObject(graphql.InputObjectConfig{
+	Name:        "PostInput",
+	Description: "게시물 작성/수정 InputObject",
+	Fields: graphql.InputObjectConfigFieldMap{
+		"title": &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"body":  &graphql.InputObjectFieldConfig{Type: graphql.String},
+	},
+})
 
 var CreatePostMutation = &graphql.Field{
 	Type:        postType,
@@ -142,7 +153,8 @@ var CreatePostMutation = &graphql.Field{
 			Type:        graphql.NewNonNull(graphql.Int),
 			Description: "게시물을 작성할 게시판의 ID",
 		},
-		"PostInput": postInputType,
+		"PostInput": &graphql.ArgumentConfig{Type: graphql.NewNonNull(postInputType)},
+		"VoteInput": &graphql.ArgumentConfig{Type: voteInputType},
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		if params.Context.Value("member") == nil {
@@ -169,11 +181,46 @@ var CreatePostMutation = &graphql.Field{
 			Body:       postInput["body"].(string),
 		}
 
+		// Create and save new vote (if requested)
+		var vote Vote
+		if params.Args["VoteInput"] != nil {
+			voteInput, _ := params.Args["VoteInput"].(map[string]interface{})
+			isMultipleSelectable := false
+			if voteInput["isMultipleSelectable"] != nil {
+				isMultipleSelectable = voteInput["isMultipleSelectable"].(bool)
+			}
+			deadline, err := time.Parse(time.RFC3339, voteInput["deadline"].(string))
+			if err != nil {
+				return nil, fmt.Errorf("ERR400")
+			}
+
+			vote = Vote{
+				Title:                voteInput["title"].(string),
+				IsMultipleSelectable: isMultipleSelectable,
+				Deadline:             deadline,
+			}
+			errs := database.DB.Save(&vote).GetErrors()
+			if len(errs) > 0 {
+				return nil, errs[0]
+			}
+
+			// Create and save vote options.
+			for _, t := range voteInput["optionTexts"].([]interface{}) {
+				errs = database.DB.Save(&VoteOption{VoteID: vote.ID, Text: t.(string)}).GetErrors()
+				if len(errs) > 0 {
+					return nil, errs[0]
+				}
+			}
+
+			post.VoteID = &vote.ID
+		}
+
 		errs := database.DB.Save(&post).GetErrors()
 		if len(errs) > 0 {
 			return nil, errs[0]
 		}
-		return &post, nil
+
+		return post, nil
 	},
 }
 
@@ -185,7 +232,7 @@ var UpdatePostMutation = &graphql.Field{
 			Type:        graphql.NewNonNull(graphql.Int),
 			Description: "수정할 게시물의 ID",
 		},
-		"PostInput": postInputType,
+		"PostInput": &graphql.ArgumentConfig{Type: graphql.NewNonNull(postInputType)},
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		// Check permission to the post.
@@ -236,6 +283,11 @@ var DeletePostMutation = &graphql.Field{
 		database.DB.Where(&Post{ID: postID}).First(&post)
 		if post.ID == 0 || (!member.IsAdmin && post.AuthorUUID != member.UUID) {
 			return nil, fmt.Errorf("ERR401")
+		}
+
+		// Delete attached vote if exists.
+		if post.VoteID != nil {
+			database.DB.Where(&Vote{ID: *post.VoteID}).Delete(Vote{})
 		}
 
 		// Delete the post.
