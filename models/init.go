@@ -11,5 +11,6 @@ func init() {
 		&Vote{},
 		&VoteOption{},
 		&VoteSelection{},
+		&Project{},
 	)
 }

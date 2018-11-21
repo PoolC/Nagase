@@ -165,6 +165,48 @@ var UpdateMemberMutation = &graphql.Field{
 	},
 }
 
+var ToggleMemberIsActivatedMutation = &graphql.Field{
+	Type:        memberType,
+	Description: "회원을 활성화/비활성화합니다. 관리자 권한이 필요합니다.",
+	Args: graphql.FieldConfigArgument{
+		"memberUUID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+	},
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		if member := params.Context.Value("member"); member == nil || !member.(*Member).IsAdmin {
+			return nil, fmt.Errorf("ERR401")
+		}
+
+		member, _ := GetMemberByUUID(params.Args["memberUUID"].(string))
+		member.IsActivated = !member.IsActivated
+		errs := database.DB.Save(&member).GetErrors()
+		if len(errs) > 0 {
+			return nil, errs[0]
+		}
+		return member, nil
+	},
+}
+
+var ToggleMemberIsAdminMutation = &graphql.Field{
+	Type:        memberType,
+	Description: "회원을 관리자로 만들거나, 관리자 권한을 해제합니다. 관리자 권한이 필요합니다.",
+	Args: graphql.FieldConfigArgument{
+		"memberUUID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+	},
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		if member := params.Context.Value("member"); member == nil || !member.(*Member).IsAdmin {
+			return nil, fmt.Errorf("ERR401")
+		}
+
+		member, _ := GetMemberByUUID(params.Args["memberUUID"].(string))
+		member.IsAdmin = !member.IsAdmin
+		errs := database.DB.Save(&member).GetErrors()
+		if len(errs) > 0 {
+			return nil, errs[0]
+		}
+		return member, nil
+	},
+}
+
 // Common functions
 func GetMemberByUUID(uuid string) (*Member, error) {
 	var member Member
