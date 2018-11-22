@@ -22,6 +22,7 @@ func main() {
 			Name: "RootQuery",
 			Fields: graphql.Fields{
 				"me":       models.MeQuery,
+				"board":    models.BoardQuery,
 				"boards":   models.BoardsQuery,
 				"post":     models.PostQuery,
 				"posts":    models.PostsQuery,

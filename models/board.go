@@ -56,6 +56,19 @@ var boardInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 })
 
 // Queries
+var BoardQuery = &graphql.Field{
+	Type:        boardType,
+	Description: "게시판을 조회합니다.",
+	Args: graphql.FieldConfigArgument{
+		"boardID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+	},
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		var board Board
+		database.DB.Where(&Board{ID: params.Args["boardID"].(int)}).First(&board)
+		return board, nil
+	},
+}
+
 var BoardsQuery = &graphql.Field{
 	Type:        graphql.NewList(boardType),
 	Description: "게시판 목록을 조회합니다",
