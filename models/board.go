@@ -28,17 +28,15 @@ var boardType = graphql.NewObject(graphql.ObjectConfig{
 		"urlPath":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"readPermission":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"writePermission": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"posts": &graphql.Field{
+		"postPage": &graphql.Field{
 			Type: graphql.NewList(graphql.NewNonNull(postType)),
 			Args: graphql.FieldConfigArgument{
 				"before": &graphql.ArgumentConfig{Type: graphql.Int},
+				"after":  &graphql.ArgumentConfig{Type: graphql.Int},
 				"count":  &graphql.ArgumentConfig{Type: graphql.Int},
 			},
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-				before, _ := params.Args["before"].(int)
-				count, _ := params.Args["count"].(int)
-
-				return getPosts(params.Source.(Board).ID, before, count), nil
+				return getPostPage(params.Source.(Board).ID, getPaginationFromGraphQLParams(&params)), nil
 			},
 		},
 	},
@@ -74,7 +72,7 @@ var BoardsQuery = &graphql.Field{
 	Description: "게시판 목록을 조회합니다",
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		var boards []Board
-		database.DB.Find(&boards)
+		database.DB.Order("id asc").Find(&boards)
 		return boards, nil
 	},
 }

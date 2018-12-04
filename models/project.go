@@ -49,7 +49,7 @@ var ProjectsQuery = &graphql.Field{
 	Description: "프로젝트 목록을 조회합니다.",
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		var prjs []Project
-		database.DB.Find(&prjs)
+		database.DB.Order("id desc").Find(&prjs)
 		return prjs, nil
 	},
 }

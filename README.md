@@ -25,10 +25,14 @@ direnv allow
 ### 실행
 
 ```sh
+# Install dependencies
+go mod tidy
+
 # Test
 go test -cover ./...
 
 # Run server
+docker run -e "POSTGRES_USER=$DB_USERNAME" -e "POSTGRES_PASSWORD=$DB_PASSWORD" -e "POSTGRES_DB=$DB_NAME" -p 5432:5432 --name nagase-db -d postgres:9.6
 go run main.go
 ```
 
@@ -40,5 +44,5 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-s' -o bin/nagase ma
 docker build -t poolc/nagase .
 
 # Run a docker container
-docker run 
+docker run -e "..."
 ```

@@ -22,10 +22,11 @@ func main() {
 			Name: "RootQuery",
 			Fields: graphql.Fields{
 				"me":       models.MeQuery,
+				"members":  models.MembersQuery,
 				"board":    models.BoardQuery,
 				"boards":   models.BoardsQuery,
 				"post":     models.PostQuery,
-				"posts":    models.PostsQuery,
+				"postPage": models.PostPageQuery,
 				"project":  models.ProjectQuery,
 				"projects": models.ProjectsQuery,
 				"vote":     models.VoteQuery,
@@ -35,6 +36,7 @@ func main() {
 			Name: "RootMutation",
 			Fields: graphql.Fields{
 				"createAccessToken":       models.CreateAccessTokenMutation,
+				"refreshAccessToken":      models.RefreshAccessTokenMutation,
 				"createBoard":             models.CreateBoardMutation,
 				"updateBoard":             models.UpdateBoardMutation,
 				"deleteBoard":             models.DeleteBoardMutation,

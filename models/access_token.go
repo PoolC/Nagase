@@ -39,13 +39,32 @@ var CreateAccessTokenMutation = &graphql.Field{
 		loginInput := params.Args["LoginInput"].(map[string]interface{})
 
 		// Get the member by login id and password.
-		member := new(Member)
+		var member Member
 		database.DB.Where(&Member{LoginID: loginInput["loginID"].(string)}).First(&member)
 		if member.UUID == "" || !member.ValidatePassword(loginInput["password"].(string)) || !member.IsActivated {
 			return nil, fmt.Errorf("TKN000")
 		}
 
-		// If token not exists or expired, generate new token.
+		// Generate new token and return.
+		key, err := auth.GenerateToken(member.UUID, member.IsAdmin)
+		if err != nil {
+			return nil, fmt.Errorf("ERR500")
+		}
+
+		return AccessToken{Key: key}, nil
+	},
+}
+
+var RefreshAccessTokenMutation = &graphql.Field{
+	Type:        accessTokenType,
+	Description: "Access Token을 갱신합니다.",
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		if params.Context.Value("member") == nil {
+			return nil, fmt.Errorf("ERR401")
+		}
+		member := params.Context.Value("member").(*Member)
+
+		// Generate new token and return.
 		key, err := auth.GenerateToken(member.UUID, member.IsAdmin)
 		if err != nil {
 			return nil, fmt.Errorf("ERR500")

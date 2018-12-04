@@ -68,13 +68,27 @@ var memberInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 
 // Queries
 var MeQuery = &graphql.Field{
-	Type:        memberType,
+	Type:        graphql.NewNonNull(memberType),
 	Description: "자신의 회원 정보를 조회합니다.",
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		if params.Context.Value("member") == nil {
 			return nil, fmt.Errorf("ERR401")
 		}
 		return params.Context.Value("member").(*Member), nil
+	},
+}
+
+var MembersQuery = &graphql.Field{
+	Type:        graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(memberType))),
+	Description: "회원 목록을 조회합니다. 관리자 권한이 필요합니다.",
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		if member := params.Context.Value("member"); member == nil || !member.(*Member).IsAdmin {
+			return nil, fmt.Errorf("ERR401")
+		}
+
+		var members []Member
+		database.DB.Order("created_at desc").Find(&members)
+		return members, nil
 	},
 }
 
