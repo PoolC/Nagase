@@ -108,8 +108,8 @@ func getPostPage(boardID int, pagination *Pagination) PostPage {
 
 	var prevCount int
 	var nextCount int
-	database.DB.Model(&Post{}).Where("id > ?", maxID).Count(&prevCount)
-	database.DB.Model(&Post{}).Where("id < ?", minID).Count(&nextCount)
+	database.DB.Model(&Post{}).Where("board_id = ? and id > ?", boardID, maxID).Count(&prevCount)
+	database.DB.Model(&Post{}).Where("board_id = ? and id < ?", boardID, minID).Count(&nextCount)
 	return PostPage{
 		Posts: posts,
 		PageInfo: PageInfo{
