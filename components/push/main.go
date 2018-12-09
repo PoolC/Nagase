@@ -3,6 +3,7 @@ package push
 import (
 	"context"
 	"fmt"
+	"os"
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/messaging"
@@ -30,7 +31,7 @@ func DeregisterToken(memberUUID string, pushToken string) error {
 
 func SendPush(memberUUID string, title string, body string, data map[string]string) error {
 	message := messaging.Message{
-		Topic:   memberUUID,
+		Topic: memberUUID,
 		Webpush: &messaging.WebpushConfig{
 			Notification: &messaging.WebpushNotification{
 				Title: title,
@@ -48,7 +49,12 @@ func SendPush(memberUUID string, title string, body string, data map[string]stri
 }
 
 func init() {
-	opt := option.WithCredentialsFile("secrets/service-account.json")
+	secretPath := os.Getenv("NAGASE_SECRETS_DIR")
+	if secretPath == "" {
+		secretPath = "secrets"
+	}
+
+	opt := option.WithCredentialsFile(secretPath + "/service-account.json")
 	config := firebase.Config{ProjectID: "poolc-b18fa"}
 	app, err := firebase.NewApp(context.Background(), &config, opt)
 	if err != nil {
