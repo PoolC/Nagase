@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/graphql-go/graphql"
 
 	"nagase/components/database"
+	"nagase/components/push"
 )
 
 type Post struct {
@@ -22,11 +24,6 @@ type Post struct {
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
-}
-
-type PostPage struct {
-	Posts    []Post
-	PageInfo PageInfo
 }
 
 var postType = graphql.NewObject(graphql.ObjectConfig{
@@ -66,6 +63,11 @@ var postType = graphql.NewObject(graphql.ObjectConfig{
 		"updatedAt": &graphql.Field{Type: graphql.NewNonNull(graphql.DateTime)},
 	},
 })
+
+type PostPage struct {
+	Posts    []Post
+	PageInfo PageInfo
+}
 
 var postPageType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "PostPage",
@@ -116,6 +118,19 @@ func getPostPage(boardID int, pagination *Pagination) PostPage {
 		},
 	}
 }
+
+type PostSubscription struct {
+	MemberUUID string `gorm:"type:varchar(40);INDEX"`
+	PostID     int    `gorm:"INDEX"`
+}
+
+var postSubscriptionType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "PostSubscription",
+	Fields: graphql.Fields{
+		"memberUUID": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"postID":     &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+	},
+})
 
 // Queries
 var PostQuery = &graphql.Field{
@@ -203,7 +218,7 @@ var CreatePostMutation = &graphql.Field{
 		}
 		member := params.Context.Value("member").(*Member)
 
-		// Get board and check permission
+		// 해당 게시판에 권한이 있는지 확인합니다.
 		boardID, _ := params.Args["boardID"].(int)
 		board := new(Board)
 		database.DB.Where(&Board{ID: boardID}).First(&board)
@@ -213,7 +228,7 @@ var CreatePostMutation = &graphql.Field{
 			return nil, fmt.Errorf("ERR403")
 		}
 
-		// Create new post
+		// 새로운 게시물 객체를 만듭니다.
 		postInput, _ := params.Args["PostInput"].(map[string]interface{})
 		post := Post{
 			BoardID:    boardID,
@@ -222,8 +237,7 @@ var CreatePostMutation = &graphql.Field{
 			Body:       postInput["body"].(string),
 		}
 
-		// Create and save new vote (if requested)
-		var vote Vote
+		// 요청에 투표가 존재하는 경우, 투표를 저장합니다.
 		if params.Args["VoteInput"] != nil {
 			voteInput, _ := params.Args["VoteInput"].(map[string]interface{})
 			isMultipleSelectable := false
@@ -235,7 +249,7 @@ var CreatePostMutation = &graphql.Field{
 				return nil, fmt.Errorf("ERR400")
 			}
 
-			vote = Vote{
+			vote := Vote{
 				Title:                voteInput["title"].(string),
 				IsMultipleSelectable: isMultipleSelectable,
 				Deadline:             deadline,
@@ -245,7 +259,7 @@ var CreatePostMutation = &graphql.Field{
 				return nil, errs[0]
 			}
 
-			// Create and save vote options.
+			// 투표의 각 선택지를 저장합니다.
 			for _, t := range voteInput["optionTexts"].([]interface{}) {
 				errs = database.DB.Save(&VoteOption{VoteID: vote.ID, Text: t.(string)}).GetErrors()
 				if len(errs) > 0 {
@@ -256,9 +270,23 @@ var CreatePostMutation = &graphql.Field{
 			post.VoteID = &vote.ID
 		}
 
+		// 게시물을 저장합니다.
 		errs := database.DB.Save(&post).GetErrors()
 		if len(errs) > 0 {
 			return nil, errs[0]
+		}
+
+		// 게시물이 작성된 게시판을 구독하고 있는 유저들에게 푸시를 발송합니다.
+		data := make(map[string]string)
+		data["boardID"] = strconv.Itoa(board.ID)
+		data["postID"] = strconv.Itoa(post.ID)
+
+		var subscriptions []BoardSubscription
+		database.DB.Where(&BoardSubscription{BoardID: boardID}).Find(&subscriptions)
+		for _, s := range subscriptions {
+			title := board.Name + " 게시판에 새 글이 작성되었습니다."
+			body := post.Title
+			go push.SendPush(s.MemberUUID, title, body, data)
 		}
 
 		return post, nil
@@ -334,6 +362,53 @@ var DeletePostMutation = &graphql.Field{
 		// Delete the post.
 		database.DB.Delete(&post)
 		return post, nil
+	},
+}
+
+var SubscribePostMutation = &graphql.Field{
+	Type:        postSubscriptionType,
+	Description: "게시물의 새 댓글 작성 알림을 구독합니다.",
+	Args: graphql.FieldConfigArgument{
+		"postID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+	},
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		if params.Context.Value("member") == nil {
+			return nil, fmt.Errorf("ERR401")
+		}
+		member := params.Context.Value("member").(*Member)
+
+		subscription := PostSubscription{
+			MemberUUID: member.UUID,
+			PostID:     params.Args["postID"].(int),
+		}
+		errs := database.DB.Save(&subscription).GetErrors()
+		if len(errs) > 0 {
+			return nil, errs[0]
+		}
+		return subscription, nil
+	},
+}
+
+var UnsubscribePostMutation = &graphql.Field{
+	Type:        postSubscriptionType,
+	Description: "게시물의 새 댓글 작성 알림 구독을 해제합니다.",
+	Args: graphql.FieldConfigArgument{
+		"postID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+	},
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		if params.Context.Value("member") == nil {
+			return nil, fmt.Errorf("ERR401")
+		}
+		member := params.Context.Value("member").(*Member)
+
+		var subscription PostSubscription
+		database.DB.Where(&PostSubscription{MemberUUID: member.UUID, PostID: params.Args["postID"].(int)}).First(&subscription)
+		if subscription.PostID == 0 {
+			return nil, fmt.Errorf("ERR400")
+		}
+
+		database.DB.Delete(&subscription)
+		return subscription, nil
 	},
 }
 

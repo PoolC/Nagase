@@ -53,6 +53,19 @@ var boardInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	},
 })
 
+type BoardSubscription struct {
+	MemberUUID string `gorm:"type:varchar(40);INDEX"`
+	BoardID    int    `gorm:"INDEX"`
+}
+
+var boardSubscriptionType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "BoardSubscription",
+	Fields: graphql.Fields{
+		"memberUUID": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"boardID":    &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+	},
+})
+
 // Queries
 var BoardQuery = &graphql.Field{
 	Type:        boardType,
@@ -170,5 +183,52 @@ var DeleteBoardMutation = &graphql.Field{
 		}
 
 		return board, nil
+	},
+}
+
+var SubscribeBoardMutation = &graphql.Field{
+	Type:        boardSubscriptionType,
+	Description: "게시판의 새 글 작성 알림을 구독합니다.",
+	Args: graphql.FieldConfigArgument{
+		"boardID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+	},
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		if params.Context.Value("member") == nil {
+			return nil, fmt.Errorf("ERR401")
+		}
+		member := params.Context.Value("member").(*Member)
+
+		subscription := BoardSubscription{
+			MemberUUID: member.UUID,
+			BoardID:    params.Args["boardID"].(int),
+		}
+		errs := database.DB.Save(&subscription).GetErrors()
+		if len(errs) > 0 {
+			return nil, errs[0]
+		}
+		return subscription, nil
+	},
+}
+
+var UnsubscribeBoardMutation = &graphql.Field{
+	Type:        boardSubscriptionType,
+	Description: "게시판의 새 글 작성 알림 구독을 해제합니다.",
+	Args: graphql.FieldConfigArgument{
+		"boardID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+	},
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		if params.Context.Value("member") == nil {
+			return nil, fmt.Errorf("ERR401")
+		}
+		member := params.Context.Value("member").(*Member)
+
+		var subscription BoardSubscription
+		database.DB.Where(&BoardSubscription{MemberUUID: member.UUID, BoardID: params.Args["boardID"].(int)}).First(&subscription)
+		if subscription.BoardID == 0 {
+			return nil, fmt.Errorf("ERR400")
+		}
+
+		database.DB.Delete(&subscription)
+		return subscription, nil
 	},
 }

@@ -2,10 +2,13 @@ package models
 
 import (
 	"fmt"
-	"nagase/components/database"
+	"strconv"
 	"time"
 
 	"github.com/graphql-go/graphql"
+
+	"nagase/components/database"
+	"nagase/components/push"
 )
 
 type Comment struct {
@@ -48,8 +51,8 @@ var CreateCommentMutation = &graphql.Field{
 		}
 		member := params.Context.Value("member").(*Member)
 
-		// Get board and check permission.
-		// All users who has read permission can create comments.
+		// 권한을 확인합니다.
+		// 해당 게시판에 읽기 권한이 있는 모든 사용자는 댓글을 달 수 있습니다.
 		postID, _ := params.Args["postID"].(int)
 		post := new(Post)
 		database.DB.Where(&Post{ID: postID}).First(&post)
@@ -65,18 +68,31 @@ var CreateCommentMutation = &graphql.Field{
 			return nil, fmt.Errorf("ERR403")
 		}
 
-		// Create new comment
+		// 댓글을 저장합니다.
 		body, _ := params.Args["body"].(string)
 		comment := Comment{
 			PostID:     postID,
 			AuthorUUID: member.UUID,
 			Body:       body,
 		}
-
 		errs := database.DB.Save(&comment).GetErrors()
 		if len(errs) > 0 {
 			return nil, errs[0]
 		}
+
+		// 댓글이 작성된 게시물을 구독하고 있는 유저들에게 푸시를 발송합니다.
+		data := make(map[string]string)
+		data["boardID"] = strconv.Itoa(board.ID)
+		data["postID"] = strconv.Itoa(post.ID)
+
+		var subscriptions []PostSubscription
+		database.DB.Where(&PostSubscription{PostID: postID}).Find(&subscriptions)
+		for _, s := range subscriptions {
+			title := member.Name + " 님이 게시물에 댓글을 남겼습니다."
+			body := comment.Body
+			go push.SendPush(s.MemberUUID, title, body, data)
+		}
+
 		return comment, nil
 	},
 }

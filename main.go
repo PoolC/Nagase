@@ -35,24 +35,43 @@ func main() {
 		Mutation: graphql.NewObject(graphql.ObjectConfig{
 			Name: "RootMutation",
 			Fields: graphql.Fields{
-				"createAccessToken":       models.CreateAccessTokenMutation,
-				"refreshAccessToken":      models.RefreshAccessTokenMutation,
-				"createBoard":             models.CreateBoardMutation,
-				"updateBoard":             models.UpdateBoardMutation,
-				"deleteBoard":             models.DeleteBoardMutation,
-				"createComment":           models.CreateCommentMutation,
-				"deleteComment":           models.DeleteCommentMutation,
+				// Access tokens
+				"createAccessToken":  models.CreateAccessTokenMutation,
+				"refreshAccessToken": models.RefreshAccessTokenMutation,
+
+				// Boards
+				"createBoard": models.CreateBoardMutation,
+				"updateBoard": models.UpdateBoardMutation,
+				"deleteBoard": models.DeleteBoardMutation,
+
+				// Comments
+				"createComment": models.CreateCommentMutation,
+				"deleteComment": models.DeleteCommentMutation,
+
+				// Members
 				"createMember":            models.CreateMemberMutation,
 				"updateMember":            models.UpdateMemberMutation,
 				"toggleMemberIsActivated": models.ToggleMemberIsActivatedMutation,
 				"toggleMemberIsAdmin":     models.ToggleMemberIsAdminMutation,
-				"createPost":              models.CreatePostMutation,
-				"deletePost":              models.DeletePostMutation,
-				"updatePost":              models.UpdatePostMutation,
-				"createProject":           models.CreateProjectMutation,
-				"updateProject":           models.UpdateProjectMutation,
-				"deleteProject":           models.DeleteProjectMutation,
-				"selectVoteOption":        models.SelectVoteOptionMutation,
+
+				// Posts
+				"createPost": models.CreatePostMutation,
+				"deletePost": models.DeletePostMutation,
+				"updatePost": models.UpdatePostMutation,
+
+				// Projects
+				"createProject": models.CreateProjectMutation,
+				"updateProject": models.UpdateProjectMutation,
+				"deleteProject": models.DeleteProjectMutation,
+
+				// Votes
+				"selectVoteOption": models.SelectVoteOptionMutation,
+
+				// Push tokens & subscriptions
+				"registerPushToken":    models.RegisterPushTokenMutation,
+				"deregisterPushToken":  models.DeregisterPushTokenMutation,
+				"subscribeBoard":       models.SubscribeBoardMutation,
+				"unsubscribeBoard":     models.UnsubscribeBoardMutation,
 			},
 		}),
 	})
