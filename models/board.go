@@ -39,6 +39,19 @@ var boardType = graphql.NewObject(graphql.ObjectConfig{
 				return getPostPage(params.Source.(Board).ID, getPaginationFromGraphQLParams(&params)), nil
 			},
 		},
+		"isSubscribed": &graphql.Field{
+			Type: graphql.NewNonNull(graphql.Boolean),
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				if params.Context.Value("member") == nil {
+					return false, nil
+				}
+				member := params.Context.Value("member").(*Member)
+
+				var subscription BoardSubscription
+				database.DB.Where(&BoardSubscription{MemberUUID: member.UUID, BoardID: params.Source.(Board).ID}).First(&subscription)
+				return subscription.MemberUUID != "", nil
+			},
+		},
 	},
 })
 

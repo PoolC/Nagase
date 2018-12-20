@@ -63,6 +63,9 @@ var ProjectQuery = &graphql.Field{
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		var prj Project
 		database.DB.Where(&Project{ID: params.Args["projectID"].(int)}).First(&prj)
+		if prj.ID == 0 {
+			return nil, fmt.Errorf("ERR400")
+		}
 		return prj, nil
 	},
 }

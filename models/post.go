@@ -59,6 +59,19 @@ var postType = graphql.NewObject(graphql.ObjectConfig{
 				return comments, nil
 			},
 		},
+		"isSubscribed": &graphql.Field{
+			Type: graphql.NewNonNull(graphql.Boolean),
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				if params.Context.Value("member") == nil {
+					return false, nil
+				}
+				member := params.Context.Value("member").(*Member)
+
+				var subscription PostSubscription
+				database.DB.Where(&PostSubscription{MemberUUID: member.UUID, PostID: params.Source.(Post).ID}).First(&subscription)
+				return subscription.MemberUUID != "", nil
+			},
+		},
 		"createdAt": &graphql.Field{Type: graphql.NewNonNull(graphql.DateTime)},
 		"updatedAt": &graphql.Field{Type: graphql.NewNonNull(graphql.DateTime)},
 	},

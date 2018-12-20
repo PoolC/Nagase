@@ -26,22 +26,22 @@ func TestValidatedToken(t *testing.T) {
 
 	// Test should be failed : token used before issued
 	patch := monkey.Patch(time.Now, func() time.Time { return baseTime.AddDate(0, 0, -1) })
-	_, _, err := ValidatedToken(token)
+	_, err := ValidatedToken(token)
 	if err == nil {
 		t.Fail()
 	}
 
 	// Test should be failed : token is expired
 	patch = monkey.Patch(time.Now, func() time.Time { return baseTime.AddDate(0, 0, 10) })
-	_, _, err = ValidatedToken(token)
+	_, err = ValidatedToken(token)
 	if err == nil {
 		t.Fail()
 	}
 
 	// Test should be passed
 	patch = monkey.Patch(time.Now, func() time.Time { return baseTime.AddDate(0, 0, 1) })
-	memberUUID, isAdmin, err := ValidatedToken(token)
-	if err != nil || memberUUID != "00000000-0000-0000-0000-000000000000" || isAdmin {
+	memberUUID, err := ValidatedToken(token)
+	if err != nil || memberUUID != "00000000-0000-0000-0000-000000000000" {
 		t.Fail()
 	}
 

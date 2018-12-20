@@ -46,8 +46,10 @@ func getPaginationFromGraphQLParams(params *graphql.ResolveParams) *Pagination {
 func init() {
 	database.DB.AutoMigrate(
 		&Board{},
+		&BoardSubscription{},
 		&Member{},
 		&Post{},
+		&PostSubscription{},
 		&Comment{},
 		&Vote{},
 		&VoteOption{},

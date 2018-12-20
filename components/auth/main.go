@@ -32,18 +32,18 @@ func GenerateToken(memberUUID string, isAdmin bool) (string, error) {
 	return token.SignedString(hmacSecret)
 }
 
-func ValidatedToken(tokenString string) (string, bool, error) {
+func ValidatedToken(tokenString string) (string, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &AuthClaims{}, func(t *jwt.Token) (interface{}, error) {
 		return hmacSecret, nil
 	})
 	if err != nil {
-		return "", false, err
+		return "", err
 	}
 
 	if claims, ok := token.Claims.(*AuthClaims); ok && token.Valid {
-		return claims.MemberUUID, claims.IsAdmin, nil
+		return claims.MemberUUID, nil
 	} else {
-		return "", false, fmt.Errorf("invalid token")
+		return "", fmt.Errorf("invalid token")
 	}
 }
 

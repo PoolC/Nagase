@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -51,6 +52,7 @@ func main() {
 				// Members
 				"createMember":            models.CreateMemberMutation,
 				"updateMember":            models.UpdateMemberMutation,
+				"deleteMember":            models.DeleteMemberMutation,
 				"toggleMemberIsActivated": models.ToggleMemberIsActivatedMutation,
 				"toggleMemberIsAdmin":     models.ToggleMemberIsAdminMutation,
 
@@ -68,17 +70,19 @@ func main() {
 				"selectVoteOption": models.SelectVoteOptionMutation,
 
 				// Push tokens & subscriptions
-				"registerPushToken":    models.RegisterPushTokenMutation,
-				"deregisterPushToken":  models.DeregisterPushTokenMutation,
-				"subscribeBoard":       models.SubscribeBoardMutation,
-				"unsubscribeBoard":     models.UnsubscribeBoardMutation,
+				"registerPushToken":   models.RegisterPushTokenMutation,
+				"deregisterPushToken": models.DeregisterPushTokenMutation,
+				"subscribeBoard":      models.SubscribeBoardMutation,
+				"unsubscribeBoard":    models.UnsubscribeBoardMutation,
+				"subscribePost":       models.SubscribePostMutation,
+				"unsubscribePost":     models.UnsubscribePostMutation,
 			},
 		}),
 	})
 
 	// Set GraphQL endpoint.
 	h := handler.New(&handler.Config{
-		Schema: &schema,
+		Schema:     &schema,
 		Playground: true,
 	})
 
@@ -93,14 +97,14 @@ func main() {
 		ctx := context.Background()
 		authorization := r.Header.Get("Authorization")
 		if authorization != "" {
-			memberUUID, _, err := auth.ValidatedToken(strings.Split(authorization, " ")[1])
+			memberUUID, err := auth.ValidatedToken(strings.Split(authorization, " ")[1])
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
 			member, err := models.GetMemberByUUID(memberUUID)
-			if err != nil {
+			if err != nil || !member.IsActivated {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
@@ -142,14 +146,14 @@ func main() {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
-			memberUUID, _, err := auth.ValidatedToken(strings.Split(authorization, " ")[1])
+			memberUUID, err := auth.ValidatedToken(strings.Split(authorization, " ")[1])
 			if memberUUID == "" || err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
 			// Limit file size to 5MB.
-			r.Body = http.MaxBytesReader(w, r.Body, 5 * 1024 * 1024)
+			r.Body = http.MaxBytesReader(w, r.Body, 5*1024*1024)
 
 			// Get bytes from the HTTP request.
 			var buffer bytes.Buffer
@@ -164,7 +168,7 @@ func main() {
 			err = models.SaveFile(&buffer, fileName)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
-				return 
+				return
 			}
 			w.WriteHeader(http.StatusOK)
 		} else if r.Method == "OPTIONS" {
@@ -174,5 +178,6 @@ func main() {
 		}
 	})))
 
+	fmt.Println("Server listening port 8080...")
 	http.ListenAndServe(":8080", handlers.CompressHandler(server))
 }

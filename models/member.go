@@ -179,6 +179,28 @@ var UpdateMemberMutation = &graphql.Field{
 	},
 }
 
+var DeleteMemberMutation = &graphql.Field{
+	Type:        memberType,
+	Description: "회원을 삭제합니다. 관리자 권한이 필요합니다.",
+	Args: graphql.FieldConfigArgument{
+		"memberUUID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+	},
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		if m := params.Context.Value("member"); m == nil || !m.(*Member).IsAdmin {
+			return nil, fmt.Errorf("ERR401")
+		}
+
+		var member Member
+		database.DB.Where(&Member{UUID: params.Args["memberUUID"].(string)}).First(&member)
+		if member.UUID == "" {
+			return nil, nil
+		}
+
+		database.DB.Delete(&member)
+		return member, nil
+	},
+}
+
 var ToggleMemberIsActivatedMutation = &graphql.Field{
 	Type:        memberType,
 	Description: "회원을 활성화/비활성화합니다. 관리자 권한이 필요합니다.",
