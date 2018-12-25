@@ -14,9 +14,9 @@ import (
 type Comment struct {
 	ID int
 
-	PostID     int `gorm:"INDEX"`
-	AuthorUUID string
-	Body       string `gorm:"type:varchar(40)"`
+	PostID     int    `gorm:"INDEX"`
+	AuthorUUID string `gorm:"type:varchar(40)"`
+	Body       string
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

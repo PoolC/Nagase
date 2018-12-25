@@ -24,3 +24,4 @@ bin/
 
 .envrc
 secrets/**
+scripts/*.csv
