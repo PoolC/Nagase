@@ -11,6 +11,8 @@ import (
 	"golang.org/x/crypto/argon2"
 
 	"nagase/components/database"
+	"nagase/components/email"
+	"nagase/components/random"
 )
 
 type Member struct {
@@ -27,6 +29,9 @@ type Member struct {
 
 	IsActivated bool `gorm:"default:false"`
 	IsAdmin     bool `gorm:"default:false"`
+
+	PasswordResetToken           string `gorm:"type:varchar(255)"`
+	PasswordResetTokenValidUntil time.Time
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -176,6 +181,87 @@ var UpdateMemberMutation = &graphql.Field{
 			return nil, errs[0]
 		}
 		return member, nil
+	},
+}
+
+var UpdateMemberPasswordMutation = &graphql.Field{
+	Type:        memberType,
+	Description: "회원 비밀번호를 수정합니다.",
+	Args: graphql.FieldConfigArgument{
+		"input": &graphql.ArgumentConfig{
+			Type: graphql.NewInputObject(graphql.InputObjectConfig{
+				Name:        "UpdateMemberPasswordInput",
+				Description: "회원 비밀번호 수정 InputObject",
+				Fields: graphql.InputObjectConfigFieldMap{
+					"token":    &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+					"password": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+				},
+			}),
+		},
+	},
+	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		input := p.Args["input"].(map[string]interface{})
+
+		var member Member
+		database.DB.Where(&Member{PasswordResetToken: input["token"].(string)}).First(&member)
+		if member.UUID == "" || member.PasswordResetTokenValidUntil.Before(time.Now()) {
+			return nil, fmt.Errorf("TKN001")
+		}
+
+		salt := make([]byte, 32)
+		hash := argon2.IDKey([]byte(input["password"].(string)), salt, 1, 8*1024, 4, 32)
+		member.PasswordHash = hash
+		member.PasswordSalt = salt
+		errs := database.DB.Save(&member).GetErrors()
+		if len(errs) > 0 {
+			return nil, errs[0]
+		}
+
+		return member, nil
+	},
+}
+
+var passwordResetEmailTitle = "[PoolC] 비밀번호 초기화 안내"
+var passwordResetEmailBody = `
+안녕하세요,
+PoolC 홈페이지 비밀번호 초기화 안내 메일입니다.
+
+아래 링크를 눌러 비밀번호 초기화를 진행해주세요.
+<a href="https://poolc.org/accounts/password_reset?token=%s">https://poolc.org/accounts/password_reset?token=%s</a>
+링크는 24시간 동안 유효합니다.
+
+본인이 비밀번호 초기화를 요청하지 않은 경우, 즉시 관리자에게 알려주세요.
+감사합니다.
+`
+
+var RequestPasswordResetMutation = &graphql.Field{
+	Type:        graphql.Boolean,
+	Description: "비밀번호 초기화 이메일 발송을 요청합니다.",
+	Args: graphql.FieldConfigArgument{
+		"email": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+	},
+	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+		address := params.Args["email"].(string)
+
+		var member Member
+		database.DB.Where(&Member{Email: address}).First(&member)
+		if member.UUID == "" {
+			return true, nil
+		}
+
+		token := random.GenerateRandomString(40)
+		member.PasswordResetToken = token
+		member.PasswordResetTokenValidUntil = time.Now().AddDate(0, 0, 1)
+		database.DB.Save(&member)
+
+		mail := email.Email{
+			Title: passwordResetEmailTitle,
+			Body:  fmt.Sprintf(passwordResetEmailBody, token, token),
+			To:    address,
+		}
+		go func() { mail.Send() }()
+
+		return true, nil
 	},
 }
 

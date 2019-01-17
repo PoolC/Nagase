@@ -24,6 +24,8 @@ require (
 	github.com/mattn/go-sqlite3 v1.9.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/satori/go.uuid v1.2.0
+	github.com/sendgrid/rest v2.4.1+incompatible // indirect
+	github.com/sendgrid/sendgrid-go v3.4.1+incompatible
 	github.com/stretchr/testify v1.2.2 // indirect
 	go.opencensus.io v0.18.0 // indirect
 	golang.org/x/crypto v0.0.0-20180910181607-0e37d006457b

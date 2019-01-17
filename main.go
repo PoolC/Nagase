@@ -50,11 +50,13 @@ func main() {
 				"deleteComment": models.DeleteCommentMutation,
 
 				// Members
-				"createMember":            models.CreateMemberMutation,
-				"updateMember":            models.UpdateMemberMutation,
-				"deleteMember":            models.DeleteMemberMutation,
-				"toggleMemberIsActivated": models.ToggleMemberIsActivatedMutation,
-				"toggleMemberIsAdmin":     models.ToggleMemberIsAdminMutation,
+				"createMember":               models.CreateMemberMutation,
+				"updateMember":               models.UpdateMemberMutation,
+				"updateMemberPassword":       models.UpdateMemberPasswordMutation,
+				"deleteMember":               models.DeleteMemberMutation,
+				"toggleMemberIsActivated":    models.ToggleMemberIsActivatedMutation,
+				"toggleMemberIsAdmin":        models.ToggleMemberIsAdminMutation,
+				"requestMemberPasswordReset": models.RequestPasswordResetMutation,
 
 				// Posts
 				"createPost": models.CreatePostMutation,
