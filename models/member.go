@@ -221,13 +221,13 @@ var UpdateMemberPasswordMutation = &graphql.Field{
 	},
 }
 
-var passwordResetEmailTitle = "[PoolC] 비밀번호 초기화 안내"
+var passwordResetEmailTitle = "비밀번호 초기화 안내"
 var passwordResetEmailBody = `
 안녕하세요,
 PoolC 홈페이지 비밀번호 초기화 안내 메일입니다.
 
 아래 링크를 눌러 비밀번호 초기화를 진행해주세요.
-<a href="https://poolc.org/accounts/password_reset?token=%s">https://poolc.org/accounts/password_reset?token=%s</a>
+<a href="https://poolc.org/accounts/password-reset?token=%s">https://poolc.org/accounts/password-reset?token=%s</a>
 링크는 24시간 동안 유효합니다.
 
 본인이 비밀번호 초기화를 요청하지 않은 경우, 즉시 관리자에게 알려주세요.

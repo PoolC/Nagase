@@ -35,7 +35,7 @@ type Email struct {
 }
 
 func (e *Email) Send() error {
-	sgMail := mail.NewSingleEmail(mail.NewEmail("PoolC", "noreply@poolc.org"), e.Title, mail.NewEmail("PoolC", e.To), e.Body, e.bodyHTML())
+	sgMail := mail.NewSingleEmail(mail.NewEmail("PoolC", "noreply@poolc.org"), "[PoolC] " + e.Title, mail.NewEmail("PoolC", e.To), e.Body, e.bodyHTML())
 	_, err := client.Send(sgMail)
 	return err
 }

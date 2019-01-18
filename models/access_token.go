@@ -41,8 +41,11 @@ var CreateAccessTokenMutation = &graphql.Field{
 		// Get the member by login id and password.
 		var member Member
 		database.DB.Where(&Member{LoginID: loginInput["loginID"].(string)}).First(&member)
-		if member.UUID == "" || !member.ValidatePassword(loginInput["password"].(string)) || !member.IsActivated {
+		if member.UUID == "" || !member.ValidatePassword(loginInput["password"].(string)) {
 			return nil, fmt.Errorf("TKN000")
+		}
+		if !member.IsActivated {
+			return nil, fmt.Errorf("TKN002")
 		}
 
 		// Generate new token and return.
