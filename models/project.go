@@ -14,8 +14,10 @@ type Project struct {
 
 	Name         string `gorm:"type:varchar(255)"`
 	Genre        string `gorm:"type:varchar(255)"`
+	Participants string `gorm:"type:varchar(255)"`
+	Duration     string `gorm:"type:varchar(255)"`
 	ThumbnailURL string `gorm:"type:varchar(255)"`
-	Body         string
+	Body         string `gorm:"type:text"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -27,6 +29,8 @@ var projectType = graphql.NewObject(graphql.ObjectConfig{
 		"id":           &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 		"name":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"genre":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"participants": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"duration":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"thumbnailURL": &graphql.Field{Type: graphql.String},
 		"body":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 	},
@@ -38,6 +42,8 @@ var projectInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Fields: graphql.InputObjectConfigFieldMap{
 		"name":         &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"genre":        &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"participants": &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"duration":     &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"thumbnailURL": &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"body":         &graphql.InputObjectFieldConfig{Type: graphql.String},
 	},
