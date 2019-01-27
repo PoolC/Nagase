@@ -92,6 +92,8 @@ var CreateProjectMutation = &graphql.Field{
 		prj := Project{
 			Name:         prjInput["name"].(string),
 			Genre:        prjInput["genre"].(string),
+			Participants: prjInput["participants"].(string),
+			Duration:     prjInput["duration"].(string),
 			ThumbnailURL: prjInput["thumbnailURL"].(string),
 			Body:         prjInput["body"].(string),
 		}
@@ -128,6 +130,12 @@ var UpdateProjectMutation = &graphql.Field{
 		}
 		if prjInput["genre"] != nil {
 			prj.Genre = prjInput["genre"].(string)
+		}
+		if prjInput["participants"] != nil {
+			prj.Participants = prjInput["participants"].(string)
+		}
+		if prjInput["duration"] != nil {
+			prj.Duration = prjInput["duration"].(string)
 		}
 		if prjInput["thumbnailURL"] != nil {
 			prj.ThumbnailURL = prjInput["thumbnailURL"].(string)
