@@ -13,6 +13,7 @@ type Project struct {
 	ID int
 
 	Name         string `gorm:"type:varchar(255)"`
+	Description  string `gorm:"type:text"`
 	Genre        string `gorm:"type:varchar(255)"`
 	Participants string `gorm:"type:varchar(255)"`
 	Duration     string `gorm:"type:varchar(255)"`
@@ -28,6 +29,7 @@ var projectType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"id":           &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 		"name":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"description":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"genre":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"participants": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"duration":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -42,6 +44,7 @@ var projectInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Fields: graphql.InputObjectConfigFieldMap{
 		"name":         &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"genre":        &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"description":  &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"participants": &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"duration":     &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"thumbnailURL": &graphql.InputObjectFieldConfig{Type: graphql.String},
@@ -92,6 +95,7 @@ var CreateProjectMutation = &graphql.Field{
 		prj := Project{
 			Name:         prjInput["name"].(string),
 			Genre:        prjInput["genre"].(string),
+			Description:  prjInput["description"].(string),
 			Participants: prjInput["participants"].(string),
 			Duration:     prjInput["duration"].(string),
 			ThumbnailURL: prjInput["thumbnailURL"].(string),
@@ -127,6 +131,9 @@ var UpdateProjectMutation = &graphql.Field{
 		prjInput, _ := params.Args["ProjectInput"].(map[string]interface{})
 		if prjInput["name"] != nil {
 			prj.Name = prjInput["name"].(string)
+		}
+		if prjInput["description"] != nil {
+			prj.Description = prjInput["description"].(string)
 		}
 		if prjInput["genre"] != nil {
 			prj.Genre = prjInput["genre"].(string)
