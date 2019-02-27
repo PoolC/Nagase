@@ -30,14 +30,18 @@ func DeregisterToken(memberUUID string, pushToken string) error {
 }
 
 func SendPush(memberUUID string, title string, body string, data map[string]string) error {
+    dataMessage := make(map[string]string)
+	dataMessage["title"] = title
+	dataMessage["body"] = body
+
+	for key, value := range data {
+		dataMessage[key] = value
+	}
+
 	message := messaging.Message{
 		Topic: memberUUID,
 		Webpush: &messaging.WebpushConfig{
-			Notification: &messaging.WebpushNotification{
-				Title: title,
-				Body:  body,
-				Data:  data,
-			},
+			Data: dataMessage,
 		},
 	}
 
