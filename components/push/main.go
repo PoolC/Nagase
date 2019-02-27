@@ -35,13 +35,13 @@ func SendPush(memberUUID string, title string, body string, data map[string]stri
 	dataMessage["body"] = body
 
 	for key, value := range data {
-	    dataMessage[key] = value
+		dataMessage[key] = value
 	}
 
 	message := messaging.Message{
 		Topic: memberUUID,
 		Webpush: &messaging.WebpushConfig{
-		    Data: dataMessage,
+			Data: dataMessage,
 		},
 	}
 
