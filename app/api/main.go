@@ -25,6 +25,10 @@ func main() {
 				// 회원 정보
 				"me":      meQuery,
 				"members": withAdminScope(membersQuery),
+
+				// 게시판
+				"board":  boardQuery,
+				"boards": boardsQuery,
 			},
 		}),
 		Mutation: graphql.NewObject(graphql.ObjectConfig{
@@ -38,6 +42,11 @@ func main() {
 				"requestPasswordReset":    requestPasswordResetMutation,
 				"toggleMemberIsActivated": withAdminScope(toggleMemberIsActivatedMutation),
 				"toggleMemberIsAdmin":     withAdminScope(toggleMemberIsAdminMutation),
+
+				// 게시판
+				"createBoard": withAdminScope(createBoardMutation),
+				"updateBoard": withAdminScope(updateBoardMutation),
+				"deleteBoard": withAdminScope(deleteBoardMutation),
 			},
 		}),
 	})

@@ -75,6 +75,31 @@ func GetMemberUUIDFromToken(tokenString string) (string, error) {
 	return "", fmt.Errorf("invalid token")
 }
 
+type Board struct {
+	ID int
+
+	Name            string `gorm:"type:varchar(40);unique_index"`
+	URLPath         string `gorm:"type:varchar(40);unique_index"`
+	ReadPermission  string `gorm:"type:varchar(10)"`
+	WritePermission string `gorm:"type:varchar(10)"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+type Post struct {
+	ID int
+
+	BoardID    int    `gorm:"INDEX"`
+	AuthorUUID string `gorm:"type:varchar(40)"`
+	Title      string
+	Body       string
+	VoteID     *int
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 func init() {
 	hmacSecret = []byte(os.Getenv("NAGASE_SECRET_KEY"))
 }
