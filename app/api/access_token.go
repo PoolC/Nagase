@@ -1,17 +1,13 @@
-package models
+package main
 
 import (
 	"fmt"
 
 	"github.com/graphql-go/graphql"
 
-	"nagase/components/auth"
+	"nagase"
 	"nagase/components/database"
 )
-
-type AccessToken struct {
-	Key string `json:"key"`
-}
 
 var accessTokenType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "AccessToken",
@@ -20,11 +16,11 @@ var accessTokenType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-var CreateAccessTokenMutation = &graphql.Field{
-	Type:        accessTokenType,
+var createAccessTokenMutation = &graphql.Field{
+	Type:        graphql.NewNonNull(accessTokenType),
 	Description: "Access Token을 발급합니다.",
 	Args: graphql.FieldConfigArgument{
-		"LoginInput": &graphql.ArgumentConfig{
+		"input": &graphql.ArgumentConfig{
 			Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
 				Name:        "LoginInput",
 				Description: "로그인 정보 InputObject",
@@ -36,12 +32,12 @@ var CreateAccessTokenMutation = &graphql.Field{
 		},
 	},
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-		loginInput := params.Args["LoginInput"].(map[string]interface{})
+		input := params.Args["input"].(map[string]interface{})
 
 		// Get the member by login id and password.
-		var member Member
-		database.DB.Where(&Member{LoginID: loginInput["loginID"].(string)}).First(&member)
-		if member.UUID == "" || !member.ValidatePassword(loginInput["password"].(string)) {
+		var member nagase.Member
+		database.DB.Where(&nagase.Member{LoginID: input["loginID"].(string)}).First(&member)
+		if member.UUID == "" || !member.ValidatePassword(input["password"].(string)) {
 			return nil, fmt.Errorf("TKN000")
 		}
 		if !member.IsActivated {
@@ -49,30 +45,30 @@ var CreateAccessTokenMutation = &graphql.Field{
 		}
 
 		// Generate new token and return.
-		key, err := auth.GenerateToken(member.UUID, member.IsAdmin)
+		key, err := member.GenerateAccessToken()
 		if err != nil {
 			return nil, fmt.Errorf("ERR500")
 		}
 
-		return AccessToken{Key: key}, nil
+		return map[string]string{"key": key}, nil
 	},
 }
 
-var RefreshAccessTokenMutation = &graphql.Field{
-	Type:        accessTokenType,
+var refreshAccessTokenMutation = &graphql.Field{
+	Type:        graphql.NewNonNull(accessTokenType),
 	Description: "Access Token을 갱신합니다.",
 	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 		if params.Context.Value("member") == nil {
 			return nil, fmt.Errorf("ERR401")
 		}
-		member := params.Context.Value("member").(*Member)
+		member := params.Context.Value("member").(*nagase.Member)
 
 		// Generate new token and return.
-		key, err := auth.GenerateToken(member.UUID, member.IsAdmin)
+		key, err := member.GenerateAccessToken()
 		if err != nil {
 			return nil, fmt.Errorf("ERR500")
 		}
 
-		return AccessToken{Key: key}, nil
+		return map[string]string{"key": key}, nil
 	},
 }

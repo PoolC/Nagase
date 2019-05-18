@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"nagase"
 	"net/http"
 	"os"
 	"strings"
@@ -13,7 +14,6 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
 
-	"nagase/components/auth"
 	"nagase/models"
 )
 
@@ -22,67 +22,26 @@ func main() {
 		Query: graphql.NewObject(graphql.ObjectConfig{
 			Name: "RootQuery",
 			Fields: graphql.Fields{
-				"me":       models.MeQuery,
-				"members":  models.MembersQuery,
-				"board":    models.BoardQuery,
-				"boards":   models.BoardsQuery,
-				"post":     models.PostQuery,
-				"postPage": models.PostPageQuery,
-				"project":  models.ProjectQuery,
-				"projects": models.ProjectsQuery,
-				"vote":     models.VoteQuery,
+				// 회원 정보
+				"me":      meQuery,
+				"members": withAdminScope(membersQuery),
 			},
 		}),
 		Mutation: graphql.NewObject(graphql.ObjectConfig{
 			Name: "RootMutation",
 			Fields: graphql.Fields{
-				// Access tokens
-				"createAccessToken":  models.CreateAccessTokenMutation,
-				"refreshAccessToken": models.RefreshAccessTokenMutation,
-
-				// Boards
-				"createBoard": models.CreateBoardMutation,
-				"updateBoard": models.UpdateBoardMutation,
-				"deleteBoard": models.DeleteBoardMutation,
-
-				// Comments
-				"createComment": models.CreateCommentMutation,
-				"deleteComment": models.DeleteCommentMutation,
-
-				// Members
-				"createMember":               models.CreateMemberMutation,
-				"updateMember":               models.UpdateMemberMutation,
-				"updateMemberPassword":       models.UpdateMemberPasswordMutation,
-				"deleteMember":               models.DeleteMemberMutation,
-				"toggleMemberIsActivated":    models.ToggleMemberIsActivatedMutation,
-				"toggleMemberIsAdmin":        models.ToggleMemberIsAdminMutation,
-				"requestMemberPasswordReset": models.RequestPasswordResetMutation,
-
-				// Posts
-				"createPost": models.CreatePostMutation,
-				"deletePost": models.DeletePostMutation,
-				"updatePost": models.UpdatePostMutation,
-
-				// Projects
-				"createProject": models.CreateProjectMutation,
-				"updateProject": models.UpdateProjectMutation,
-				"deleteProject": models.DeleteProjectMutation,
-
-				// Votes
-				"selectVoteOption": models.SelectVoteOptionMutation,
-
-				// Push tokens & subscriptions
-				"registerPushToken":   models.RegisterPushTokenMutation,
-				"deregisterPushToken": models.DeregisterPushTokenMutation,
-				"subscribeBoard":      models.SubscribeBoardMutation,
-				"unsubscribeBoard":    models.UnsubscribeBoardMutation,
-				"subscribePost":       models.SubscribePostMutation,
-				"unsubscribePost":     models.UnsubscribePostMutation,
+				// 회원 정보
+				"createMember":            createMemberMutation,
+				"updateMember":            withMemberScope(updateMemberMutation),
+				"updateMemberPassword":    withMemberScope(updateMemberPasswordMutation),
+				"deleteMember":            withAdminScope(deleteMemberMutation),
+				"requestPasswordReset":    requestPasswordResetMutation,
+				"toggleMemberIsActivated": withAdminScope(toggleMemberIsActivatedMutation),
+				"toggleMemberIsAdmin":     withAdminScope(toggleMemberIsAdminMutation),
 			},
 		}),
 	})
 
-	// Set GraphQL endpoint.
 	h := handler.New(&handler.Config{
 		Schema:     &schema,
 		Playground: true,
@@ -97,25 +56,11 @@ func main() {
 
 		// Set context.
 		ctx := context.Background()
-		authorization := r.Header.Get("Authorization")
-		if authorization != "" {
-			memberUUID, err := auth.ValidatedToken(strings.Split(authorization, " ")[1])
-			if err != nil {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-
-			member, err := models.GetMemberByUUID(memberUUID)
-			if err != nil || !member.IsActivated {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-
-			ctx = context.WithValue(ctx, "member", member)
-		}
+		ctx = context.WithValue(ctx, ctxHTTPReq, r)
 
 		h.ContextHandler(ctx, w, r)
 	})))
+
 	server.Handle("/files/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Parse fileName.
 		paths := strings.Split(r.URL.Path, "/")
@@ -148,7 +93,7 @@ func main() {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
-			memberUUID, err := auth.ValidatedToken(strings.Split(authorization, " ")[1])
+			memberUUID, err := nagase.GetMemberUUIDFromToken(strings.Split(authorization, " ")[1])
 			if memberUUID == "" || err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
 				return

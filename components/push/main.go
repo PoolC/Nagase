@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/messaging"
@@ -30,7 +31,7 @@ func DeregisterToken(memberUUID string, pushToken string) error {
 }
 
 func SendPush(memberUUID string, title string, body string, data map[string]string) error {
-    dataMessage := make(map[string]string)
+	dataMessage := make(map[string]string)
 	dataMessage["title"] = title
 	dataMessage["body"] = body
 
@@ -53,12 +54,21 @@ func SendPush(memberUUID string, title string, body string, data map[string]stri
 }
 
 func init() {
-	secretPath := os.Getenv("NAGASE_SECRETS_DIR")
-	if secretPath == "" {
-		secretPath = "secrets"
+	credPath := ""
+	dir, _ := os.Getwd()
+	for {
+		if _, err := os.Stat(dir + "/secrets/service-account.json"); err == nil {
+			credPath = dir + "/secrets/service-account.json"
+			break
+		}
+
+		if dir == "/" {
+			panic("service-account.json not found")
+		}
+		dir = filepath.Dir(dir)
 	}
 
-	opt := option.WithCredentialsFile(secretPath + "/service-account.json")
+	opt := option.WithCredentialsFile(credPath)
 	config := firebase.Config{ProjectID: "poolc-b18fa"}
 	app, err := firebase.NewApp(context.Background(), &config, opt)
 	if err != nil {
