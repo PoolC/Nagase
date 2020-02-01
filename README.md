@@ -1,13 +1,11 @@
-# Nagase [![Docker Build Status](https://img.shields.io/docker/build/poolc/nagase.svg)](https://hub.docker.com/r/poolc/nagase)
+# Nagase
 
 > PoolC 홈페이지 API 서버
 
 ## Prerequisites
 
-  - Go 1.11
-  - PostgreSQL
-  - Docker
-
+- NodeJS
+- Docker, Docker Compose
 
 ## 개발
 
@@ -24,29 +22,21 @@ direnv allow
 
 그 다음, `secrets` 디렉토리에 아래 시크릿 파일들을 추가합니다.
 
-  - `service-account.json` : Firebase 관련 기능을 사용하기 위한 비공개 키입니다. [Firebase Console](https://console.firebase.google.com)에서 발급받을 수 있습니다.
+- `service-account.json` : Firebase 관련 기능을 사용하기 위한 비공개 키입니다. [Firebase Console](https://console.firebase.google.com)에서 발급받을 수 있습니다.
 
 ### 실행
 
 ```sh
-# Install dependencies
-go mod tidy
+# 로컬 DB 실행
+docker-compose -f compose/local/docker-compose.yaml up -d
 
-# Test
-go test -cover ./...
+# 의존성 설치
+yarn
 
-# Run server
-docker run -e "POSTGRES_USER=$DB_USERNAME" -e "POSTGRES_PASSWORD=$DB_PASSWORD" -e "POSTGRES_DB=$DB_NAME" -p 5432:5432 --name nagase-db -d postgres:9.6
-go run main.go
-```
+# 테스트
+yarn lint
+yarn test:all
 
-## 배포
-
-```sh
-# Build a docker image
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-s' -o bin/nagase main.go
-docker build -t poolc/nagase .
-
-# Run a docker container
-docker run -e "..." -p 8080:8080 poolc/nagase
+# 로컬 서버 실행
+yarn start
 ```

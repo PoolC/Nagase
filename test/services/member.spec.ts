@@ -7,7 +7,7 @@ import Member from '../../src/models/member';
 import MemberService from '../../src/services/member';
 
 describe('MemberService', () => {
-  const baseTime = new Date(2018, 9, 24, 0, 39, 39);
+  const baseTime = new Date(1540309179000); // 2018-10-23T15:39:39.000Z
   const service = new MemberService(getRepository(Member));
 
   const sampleUuid = '00000000-0000-0000-0000-000000000000';

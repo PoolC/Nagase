@@ -1,0 +1,49 @@
+name: Build And Deploy
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:9
+        env:
+          POSTGRES_DB: poolc_test
+          POSTGRES_PASSWORD: rootpass
+        ports:
+        - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
+    - name: Install dependencies
+      run: |
+        npm install -g yarn
+        yarn --frozen-lockfile
+    - name: Run tests
+      run: |
+        yarn lint
+        yarn coverage:all
+      env:
+        NAGASE_SECRET_KEY: sample_secret_key
+    - name: Report coverage
+      run: |
+        mkdir -p coverage
+        yarn nyc report --reporter=json > coverage/coverage.json
+
+        CODECOV_TOKEN=${{ secrets.CODECOV_TOKEN }} bash <(curl -s https://codecov.io/bash)
+    - name: Build docker image
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        docker build -t poolc/nagase:latest .
+        docker login --username hellodhlyn --password ${{ secrets.DOCKER_ACCESS_TOKEN }}
+
+        docker tag poolc/nagase:latest poolc/nagase:${GITHUB_REF##*/}
+
+        docker push poolc/nagase:latest
+        docker push poolc/nagase:${GITHUB_REF##*/}

@@ -7,13 +7,15 @@
     "prebuild": "rimraf dist",
     "build": "tsc",
     "postbuild": "copyfiles -u 1 src/**/*.graphql dist",
-    "test:all": "NODE_ENV=test mocha -r ts-node/register -r source-map-support/register -r test/prepare.ts --fule-trace --bail --reporter dot 'test/**/*.spec.ts'",
+    "test:all": "NODE_ENV=test mocha -r ts-node/register -r test/prepare.ts --fule-trace --bail --reporter dot 'test/**/*.spec.ts'",
+    "coverage:all": "NODE_ENV=test nyc mocha -r ts-node/register -r test/prepare.ts --fule-trace --bail --reporter dot 'test/**/*.spec.ts'",
     "typeorm": "ts-node ./node_modules/typeorm/cli.js --config src/ormconfig.ts",
     "typeorm:migrate": "yarn typeorm migration:run",
     "typeorm:revert": "yarn typeorm migration:revert",
     "typeorm:show": "yarn typeorm migration:show"
   },
   "devDependencies": {
+    "@istanbuljs/nyc-config-typescript": "^1.0.1",
     "@types/argon2": "^0.15.0",
     "@types/chai": "^4.2.7",
     "@types/chai-as-promised": "^7.1.2",
@@ -39,6 +41,7 @@
     "mocha": "^7.0.1",
     "mocha-prepare": "^0.1.0",
     "nodemon": "^2.0.2",
+    "nyc": "^15.0.0",
     "rimraf": "^3.0.1",
     "rosie": "^2.0.1",
     "sinon": "^8.1.1",
@@ -60,5 +63,15 @@
     "typeorm-naming-strategies": "^1.1.0",
     "typeorm-typedi-extensions": "^0.2.3",
     "uuid": "^3.4.0"
+  },
+  "nyc": {
+    "extends": "@istanbuljs/nyc-config-typescript",
+    "include": [
+      "src/**/*.ts"
+    ],
+    "exclude": [
+      "src/migrations/*.ts"
+    ],
+    "all": true
   }
 }
