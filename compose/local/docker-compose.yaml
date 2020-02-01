@@ -1,0 +1,10 @@
+version: '3'
+services:
+  poolc-db:
+    image: postgres:9.6
+    container_name: poolc-db
+    environment:
+      POSTGRES_PASSWORD: rootpass
+      POSTGRES_DB: poolc
+    ports:
+      - 5432:5432

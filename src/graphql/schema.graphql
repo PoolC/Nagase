@@ -1,0 +1,45 @@
+schema {
+  query:    RootQuery
+  mutation: RootMutation
+}
+
+type RootQuery {
+  me: Member!
+}
+
+type RootMutation {
+  createAccessToken(LoginInput: CreateAccessTokenInput!): AccessToken!
+  createMember(MemberInput: CreateMemberInput!): Member!
+}
+
+type AccessToken {
+  key: String!
+}
+
+type Member {
+  uuid:        String!
+  loginID:     String!
+  email:       String!
+  phoneNumber: String!
+  name:        String!
+  department:  String!
+  studentID:   String!
+  isActivated: Boolean!
+  isAdmin:     Boolean!
+}
+
+input CreateAccessTokenInput {
+  loginID:  String!
+  password: String!
+}
+
+
+input CreateMemberInput {
+  loginID:     String!
+  password:    String!
+  email:       String!
+  name:        String!
+  phoneNumber: String!
+  department:  String!
+  studentID:   String!
+}
