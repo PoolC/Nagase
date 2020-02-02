@@ -20,11 +20,15 @@ export default class MemberService {
   }
 
   public async findByLoginId(loginId: string): Promise<Member> {
-    return this.memberRepository.findOne({ loginId });
+    return this.memberRepository.findOne({ loginID: loginId });
+  }
+
+  public async findAll(): Promise<Member[]> {
+    return this.memberRepository.find();
   }
 
   public async checkDuplication(member: Member): Promise<string> {
-    if (await this.memberRepository.count({ loginId: member.loginId }) !== 0) {
+    if (await this.memberRepository.count({ loginID: member.loginID }) !== 0) {
       return 'MEM000';
     } if (await this.memberRepository.count({ email: member.email }) !== 0) {
       return 'MEM001';
@@ -34,6 +38,10 @@ export default class MemberService {
 
   public async save(member: Member): Promise<Member> {
     return this.memberRepository.save(member);
+  }
+
+  public async delete(member: Member): Promise<void> {
+    await this.memberRepository.delete(member);
   }
 
   public generateToken(member: Member): string {

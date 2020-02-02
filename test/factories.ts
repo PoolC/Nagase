@@ -5,5 +5,7 @@ import Member from '../src/models/member';
 
 export function defineFactories() {
   Factory.define<Member>('Member')
-    .attr('uuid', () => uuidv4());
+    .attr('uuid', () => uuidv4())
+    .attr('isActivated', () => false)
+    .attr('isAdmin', () => false);
 }

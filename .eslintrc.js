@@ -25,6 +25,7 @@ module.exports = {
     'import/extensions': 0,
     'no-useless-constructor': 0,
     'quotes': ['error', 'single'],
+    'max-len': ['error', 120],
   },
   ignorePatterns: [
     'src/migrations/*',

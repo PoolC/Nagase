@@ -1,4 +1,3 @@
-import { Server } from 'http';
 import Koa from 'koa';
 import mount from 'koa-mount';
 import graphql from 'koa-graphql';
@@ -34,8 +33,7 @@ export default class ApiApplication {
           const jwtToken = authorization.replace('Bearer ', '');
           member = await this.memberService.findByUuid(this.memberService.validateToken(jwtToken));
         } catch {
-          ctx.throw(401);
-          return;
+          // Ignore error
         }
 
         if (member?.isActivated) {

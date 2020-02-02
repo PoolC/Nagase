@@ -5,11 +5,16 @@ schema {
 
 type RootQuery {
   me: Member!
+  members: [Member!]!
 }
 
 type RootMutation {
   createAccessToken(LoginInput: CreateAccessTokenInput!): AccessToken!
   createMember(MemberInput: CreateMemberInput!): Member!
+  updateMember(MemberInput: UpdateMemberInput!): Member!
+  deleteMember(memberUUID: String!): Member
+  toggleMemberIsActivated(memberUUID: String!): Member
+  toggleMemberIsAdmin(memberUUID: String!): Member
 }
 
 type AccessToken {
@@ -42,4 +47,14 @@ input CreateMemberInput {
   phoneNumber: String!
   department:  String!
   studentID:   String!
+}
+
+input UpdateMemberInput {
+  uuid:        String!
+  password:    String
+  email:       String
+  name:        String
+  phoneNumber: String
+  department:  String
+  studentID:   String
 }

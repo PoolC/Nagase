@@ -11,7 +11,7 @@ export default class Member {
   public uuid: string;
 
   @Column()
-  public loginId: string;
+  public loginID: string;
 
   @Column({ name: 'password_hash', type: 'bytea' })
   private passwordHash: Buffer;
@@ -32,7 +32,7 @@ export default class Member {
   public department: string;
 
   @Column()
-  public studentId: string;
+  public studentID: string;
 
   @Column()
   public isActivated: boolean;
@@ -47,10 +47,10 @@ export default class Member {
   public passwordResetTokenValidUntil: Date;
 
   @CreateDateColumn()
-  public created_at: Date;
+  public createdAt: Date;
 
   @UpdateDateColumn()
-  public updated_at: Date;
+  public updatedAt: Date;
 
   @BeforeInsert()
   beforeInsert(): void {

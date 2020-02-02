@@ -1,17 +1,18 @@
 import { Service } from 'typedi';
-import { Context } from 'koa';
 
 import MemberQuery from './member';
+import { QueryParams } from '..';
 
 @Service()
 export default class Query {
-  public all: {[_: string]: (input: any, ctx: Context) => any};
+  public all: {[_: string]: (...p: QueryParams) => any};
 
   constructor(
     private readonly memberQuery: MemberQuery,
   ) {
     this.all = {
-      me: (input: object, ctx: Context) => memberQuery.me(input, ctx),
+      me: (...params: QueryParams) => memberQuery.me(...params),
+      members: (...params: QueryParams) => memberQuery.members(...params),
     };
   }
 }
