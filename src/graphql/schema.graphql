@@ -6,6 +6,8 @@ schema {
 type RootQuery {
   me: Member!
   members: [Member!]!
+  board(boardID: Int!): Board
+  boards: [Board!]
 }
 
 type RootMutation {
@@ -16,6 +18,7 @@ type RootMutation {
   toggleMemberIsActivated(memberUUID: String!): Member
   toggleMemberIsAdmin(memberUUID: String!): Member
 }
+
 
 type AccessToken {
   key: String!
@@ -33,11 +36,41 @@ type Member {
   isAdmin:     Boolean!
 }
 
+type Board {
+  id:              Int!
+  isSubscribed:    Boolean!
+  name:            String!
+  readPermission:  String!
+  urlPath:         String!
+  writePermission: String!
+  postPage(before: Int, after: Int, count: Int): [Post!]
+}
+
+type Post {
+  author:       Member!
+  board:        Board!
+  body:         String!
+  comments:     [Comment!]
+  createdAt:    String!
+  id:           Int!
+  isSubscribed: Boolean!
+  title:        String!
+  updatedAt:    String!
+# vote:         Vote
+}
+
+type Comment {
+  author:    Member!
+  body:      String!
+  createdAt: String!
+  id:        Int!
+}
+
+
 input CreateAccessTokenInput {
   loginID:  String!
   password: String!
 }
-
 
 input CreateMemberInput {
   loginID:     String!
