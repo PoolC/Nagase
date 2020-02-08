@@ -17,6 +17,10 @@ type RootMutation {
   deleteMember(memberUUID: String!): Member
   toggleMemberIsActivated(memberUUID: String!): Member
   toggleMemberIsAdmin(memberUUID: String!): Member
+
+  createBoard(BoardInput: CreateBoardInput!): Board!
+  updateBoard(boardID: Int!, BoardInput: UpdateBoardInput!): Board!
+  deleteBoard(boardID: Int!): Board!
 }
 
 
@@ -90,4 +94,18 @@ input UpdateMemberInput {
   phoneNumber: String
   department:  String
   studentID:   String
+}
+
+input CreateBoardInput {
+  name:            String!
+  urlPath:         String!
+  readPermission:  String!
+  writePermission: String!
+}
+
+input UpdateBoardInput {
+  name:            String
+  urlPath:         String
+  readPermission:  String
+  writePermission: String
 }

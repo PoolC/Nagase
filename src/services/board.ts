@@ -17,4 +17,12 @@ export default class BoardService {
   public async findAll(): Promise<Board[]> {
     return this.boardRepository.find({ order: { id: 'ASC' } });
   }
+
+  public async save(obj: Board): Promise<Board> {
+    return this.boardRepository.save(obj);
+  }
+
+  public async delete(obj: Board): Promise<void> {
+    await this.boardRepository.delete(obj);
+  }
 }

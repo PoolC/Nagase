@@ -3,6 +3,7 @@ import { Service } from 'typedi';
 import MemberMutation, {
   CreateAccessTokenInput, CreateMemberInput, MemberUUIDInput, UpdateMemberInput,
 } from './member';
+import BoardMutation, { BoardIDInput, CreateBoardInput, UpdateBoardInput } from './board';
 import { QueryParams } from '../index';
 
 @Service()
@@ -11,6 +12,7 @@ export default class Mutation {
 
   constructor(
     private readonly memberMutation: MemberMutation,
+    private readonly boardMutation: BoardMutation,
   ) {
     this.all = {
       createMember:
@@ -25,6 +27,13 @@ export default class Mutation {
         (...params: QueryParams<MemberUUIDInput>) => memberMutation.toggleMemberIsActivated(...params),
       toggleMemberIsAdmin:
         (...params: QueryParams<MemberUUIDInput>) => memberMutation.toggleMemberIsAdmin(...params),
+
+      createBoard:
+        (...params: QueryParams<CreateBoardInput>) => boardMutation.createBoard(...params),
+      updateBoard:
+        (...params: QueryParams<UpdateBoardInput>) => boardMutation.updateBoard(...params),
+      deleteBoard:
+        (...params: QueryParams<BoardIDInput>) => boardMutation.deleteBoard(...params),
     };
   }
 }
