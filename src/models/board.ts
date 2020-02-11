@@ -2,6 +2,8 @@ import {
   Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn,
 } from 'typeorm';
 
+import Member from './member';
+
 export enum BoardPermission {
   ADMIN = 'ADMIN',
   MEMBER = 'MEMBER',
@@ -46,6 +48,24 @@ export default class Board {
 
   @UpdateDateColumn()
   public updatedAt: Date;
+
+  public readPermittedTo(member: Member): boolean {
+    switch (this.readPermission) {
+      case BoardPermission.ADMIN: return member?.isAdmin || false;
+      case BoardPermission.MEMBER: return member?.isActivated || false;
+      case BoardPermission.PUBLIC: return true;
+      default: return false;
+    }
+  }
+
+  public writePermittedTo(member: Member): boolean {
+    switch (this.writePermission) {
+      case BoardPermission.ADMIN: return member?.isAdmin || false;
+      case BoardPermission.MEMBER: return member?.isActivated || false;
+      case BoardPermission.PUBLIC: return true;
+      default: return false;
+    }
+  }
 
   public static permissionFromString(value: string): BoardPermission {
     switch (value) {

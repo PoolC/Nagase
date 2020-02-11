@@ -5,7 +5,7 @@ export class CreatePostStuffs1580998308003 implements MigrationInterface {
     await queryRunner.createTable(new Table({
       name: 'boards',
       columns: [
-        { name: 'id', type: 'integer', isPrimary: true },
+        { name: 'id', type: 'integer', isPrimary: true, isGenerated: true },
         { name: 'name', type: 'varchar', length: '40', isUnique: true },
         { name: 'url_path', type: 'varchar', length: '40', isUnique: true },
         { name: 'read_permission', type: 'varchar', length: '10' },
@@ -18,7 +18,7 @@ export class CreatePostStuffs1580998308003 implements MigrationInterface {
     await queryRunner.createTable(new Table({
       name: 'posts',
       columns: [
-        { name: 'id', type: 'integer', isPrimary: true },
+        { name: 'id', type: 'integer', isPrimary: true, isGenerated: true },
         { name: 'board_id', type: 'integer' },
         { name: 'author_uuid', type: 'varchar', length: '40' },
         { name: 'title', type: 'text' },
@@ -35,7 +35,7 @@ export class CreatePostStuffs1580998308003 implements MigrationInterface {
     await queryRunner.createTable(new Table({
       name: 'comments',
       columns: [
-        { name: 'id', type: 'integer', isPrimary: true },
+        { name: 'id', type: 'integer', isPrimary: true, isGenerated: true },
         { name: 'post_id', type: 'integer' },
         { name: 'author_uuid', type: 'varchar', length: '40' },
         { name: 'body', type: 'text' },

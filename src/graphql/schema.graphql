@@ -8,6 +8,8 @@ type RootQuery {
   members: [Member!]!
   board(boardID: Int!): Board
   boards: [Board!]
+  post(postID: Int!): Post
+  postPage(boardID: Int!, page: Int, count: Int): PostPage
 }
 
 type RootMutation {
@@ -63,11 +65,21 @@ type Post {
 # vote:         Vote
 }
 
+type PostPage {
+  items: [Post!]!
+  pageInfo: PageInfo!
+}
+
 type Comment {
   author:    Member!
   body:      String!
   createdAt: String!
   id:        Int!
+}
+
+type PageInfo {
+  currentPage: Int!
+  totalPage: Int!
 }
 
 
