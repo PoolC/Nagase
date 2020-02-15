@@ -21,4 +21,12 @@ export default class PostService {
     // eslint-disable-next-line @typescript-eslint/camelcase
     return findPageItems<Post>(this.postRepository, pageOpts, { board_id: boardId }, { id: 'DESC' }, relations);
   }
+
+  public async save(obj: Post): Promise<Post> {
+    return this.postRepository.save(obj);
+  }
+
+  public async delete(obj: Post): Promise<void> {
+    await this.postRepository.delete(obj);
+  }
 }

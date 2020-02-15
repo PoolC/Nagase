@@ -4,6 +4,7 @@ import MemberMutation, {
   CreateAccessTokenInput, CreateMemberInput, MemberUUIDInput, UpdateMemberInput,
 } from './member';
 import BoardMutation, { BoardIDInput, CreateBoardInput, UpdateBoardInput } from './board';
+import PostMutation, { CreatePostInput, DeletePostInput, UpdatePostInput } from './post';
 import { QueryParams } from '../index';
 
 @Service()
@@ -13,6 +14,7 @@ export default class Mutation {
   constructor(
     private readonly memberMutation: MemberMutation,
     private readonly boardMutation: BoardMutation,
+    private readonly postMutation: PostMutation,
   ) {
     this.all = {
       createMember:
@@ -34,6 +36,13 @@ export default class Mutation {
         (...params: QueryParams<UpdateBoardInput>) => boardMutation.updateBoard(...params),
       deleteBoard:
         (...params: QueryParams<BoardIDInput>) => boardMutation.deleteBoard(...params),
+
+      createPost:
+        (...params: QueryParams<CreatePostInput>) => postMutation.createPost(...params),
+      updatePost:
+        (...params: QueryParams<UpdatePostInput>) => postMutation.updatePost(...params),
+      deletePost:
+        (...params: QueryParams<DeletePostInput>) => postMutation.deletePost(...params),
     };
   }
 }

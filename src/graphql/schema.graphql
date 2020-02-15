@@ -23,6 +23,10 @@ type RootMutation {
   createBoard(BoardInput: CreateBoardInput!): Board!
   updateBoard(boardID: Int!, BoardInput: UpdateBoardInput!): Board!
   deleteBoard(boardID: Int!): Board!
+
+  createPost(boardID: Int!, PostInput: CreatePostInput!): Post! # TODO: add VoteInput!
+  updatePost(postID: Int!, PostInput: UpdatePostInput!): Post!
+  deletePost(postID: Int!): Post!
 }
 
 
@@ -120,4 +124,14 @@ input UpdateBoardInput {
   urlPath:         String
   readPermission:  String
   writePermission: String
+}
+
+input CreatePostInput {
+  title: String!
+  body:  String!
+}
+
+input UpdatePostInput {
+  title: String
+  body:  String
 }
