@@ -54,7 +54,7 @@ export default class PostMutation {
 
   @PermissionGuard()
   public async updatePost(args: UpdatePostInput, ctx: Partial<Context>): Promise<Post> {
-    const post = await this.postService.findById(args.postID);
+    const post = await this.postService.findById(args.postID, ['author']);
     if (!post || post.author.uuid !== ctx.state.member.uuid) {
       throw new Error('ERR400');
     }
@@ -67,7 +67,7 @@ export default class PostMutation {
 
   @PermissionGuard()
   public async deletePost(args: DeletePostInput, ctx: Partial<Context>): Promise<Post> {
-    const post = await this.postService.findById(args.postID);
+    const post = await this.postService.findById(args.postID, ['author']);
     if (!post || (!ctx.state.member.isAdmin && (post.author.uuid !== ctx.state.member.uuid))) {
       throw new Error('ERR400');
     }

@@ -27,6 +27,9 @@ type RootMutation {
   createPost(boardID: Int!, PostInput: CreatePostInput!): Post! # TODO: add VoteInput!
   updatePost(postID: Int!, PostInput: UpdatePostInput!): Post!
   deletePost(postID: Int!): Post!
+
+  createComment(postID: Int!, body: String!): Comment!
+  deleteComment(commentID: Int!): Comment!
 }
 
 

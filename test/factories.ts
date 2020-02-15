@@ -2,7 +2,8 @@ import faker from 'faker';
 import { Factory } from 'rosie';
 import uuidv4 from 'uuid/v4';
 
-import Board, {BoardPermission} from '../src/models/board';
+import Board, { BoardPermission } from '../src/models/board';
+import Comment from '../src/models/comment';
 import Member from '../src/models/member';
 import Post from '../src/models/post';
 
@@ -25,8 +26,17 @@ export function defineFactories() {
     .sequence('id')
     .attr('board', () => Factory.build<Board>('Board'))
     .attr('author', () => Factory.build<Member>('Member'))
+    .attr('comments', (): Comment[] => [])  // prevent circular dependency
     .attr('title', () => faker.lorem.lines(1))
     .attr('body', () => faker.lorem.lines(10))
+    .attr('createdAt', () => new Date())
+    .attr('updatedAt', () => new Date());
+
+  Factory.define<Comment>('Comment')
+    .sequence('id')
+    .attr('post', () => Factory.build<Post>('Post'))
+    .attr('author', () => Factory.build<Member>('Member'))
+    .attr('body', () => faker.lorem.lines(3))
     .attr('createdAt', () => new Date())
     .attr('updatedAt', () => new Date());
 }

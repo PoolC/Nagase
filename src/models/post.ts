@@ -1,8 +1,9 @@
 import {
-  Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryColumn, UpdateDateColumn,
+  AfterLoad, Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn,
 } from 'typeorm';
 
 import Board from './board';
+import Comment from './comment';
 import Member from './member';
 
 @Entity('posts')
@@ -24,9 +25,19 @@ export default class Post {
   @Column()
   public body: string;
 
+  @OneToMany((_) => Comment, (comment) => comment.post)
+  public comments: Comment[];
+
   @CreateDateColumn()
   public createdAt: Date;
 
   @UpdateDateColumn()
   public updatedAt: Date;
+
+  @AfterLoad()
+  private afterLoad() {
+    if (this.comments?.length > 0) {
+      this.comments = this.comments.sort(((a, b) => b.id - a.id));
+    }
+  }
 }

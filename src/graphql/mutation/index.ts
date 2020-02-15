@@ -4,6 +4,7 @@ import MemberMutation, {
   CreateAccessTokenInput, CreateMemberInput, MemberUUIDInput, UpdateMemberInput,
 } from './member';
 import BoardMutation, { BoardIDInput, CreateBoardInput, UpdateBoardInput } from './board';
+import CommentMutation, { CreateCommentInput, DeleteCommentInput } from './comment';
 import PostMutation, { CreatePostInput, DeletePostInput, UpdatePostInput } from './post';
 import { QueryParams } from '../index';
 
@@ -15,6 +16,7 @@ export default class Mutation {
     private readonly memberMutation: MemberMutation,
     private readonly boardMutation: BoardMutation,
     private readonly postMutation: PostMutation,
+    private readonly commentMutation: CommentMutation,
   ) {
     this.all = {
       createMember:
@@ -43,6 +45,11 @@ export default class Mutation {
         (...params: QueryParams<UpdatePostInput>) => postMutation.updatePost(...params),
       deletePost:
         (...params: QueryParams<DeletePostInput>) => postMutation.deletePost(...params),
+
+      createComment:
+        (...params: QueryParams<CreateCommentInput>) => commentMutation.createComment(...params),
+      deleteComment:
+        (...params: QueryParams<DeleteCommentInput>) => commentMutation.deleteComment(...params),
     };
   }
 }
