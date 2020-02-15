@@ -7,9 +7,11 @@ type RootQuery {
   me: Member!
   members: [Member!]!
   board(boardID: Int!): Board
-  boards: [Board!]
+  boards: [Board!]!
   post(postID: Int!): Post
   postPage(boardID: Int!, page: Int, count: Int): PostPage
+  project(projectID: Int!): Project
+  projects: [Project!]!
 }
 
 type RootMutation {
@@ -30,6 +32,10 @@ type RootMutation {
 
   createComment(postID: Int!, body: String!): Comment!
   deleteComment(commentID: Int!): Comment!
+
+  createProject(ProjectInput: CreateProjectInput!): Project!
+  updateProject(projectID: Int!, ProjectInput: UpdateProjectInput!): Project!
+  deleteProject(projectID: Int!): Project!
 }
 
 
@@ -89,6 +95,17 @@ type PageInfo {
   totalPage: Int!
 }
 
+type Project {
+  id:           Int!
+  body:         String!
+  description:  String!
+  duration:     String!
+  genre:        String!
+  name:         String!
+  participants: String!
+  thumbnailURL: String
+}
+
 
 input CreateAccessTokenInput {
   loginID:  String!
@@ -137,4 +154,24 @@ input CreatePostInput {
 input UpdatePostInput {
   title: String
   body:  String
+}
+
+input CreateProjectInput {
+  body:         String!
+  description:  String!
+  duration:     String!
+  genre:        String!
+  name:         String!
+  participants: String!
+  thumbnailURL: String
+}
+
+input UpdateProjectInput {
+  body:         String
+  description:  String
+  duration:     String
+  genre:        String
+  name:         String
+  participants: String
+  thumbnailURL: String
 }
